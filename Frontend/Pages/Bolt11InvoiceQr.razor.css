@@ -1,0 +1,62 @@
+﻿.bolt11-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 90vw;
+}
+
+.bolt11-card {
+    background-color: #f8f9fa;
+    border: 2px solid;
+    border-color: #FF9900;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.bolt11-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.bolt11-description {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.qr-code-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.qr-code {
+    width: 300px;
+    height: auto;
+    border-radius: 5px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.bolt11-input {
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 10px;
+}

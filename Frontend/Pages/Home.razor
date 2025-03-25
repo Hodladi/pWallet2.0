@@ -1,0 +1,64 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@page "/"
+
+@using System.Globalization
+@using SimpLN.Models
+@using SimpLN.Services
+@using SimpLN.Frontend.Layout
+
+@inherits SimpLn
+
+@inject LoadingService LoadingService
+@inject IWalletService WalletService
+
+<div class="home-container">
+	@if (LoadingService.IsLoading)
+	{
+		<div class="loading-spinner">
+			<div class="spinner"></div>
+		</div>
+	}
+	else
+	{
+		<div class="home-card">
+			<div class="balance-display">
+				<span class="balance-size">@FormatBalance(_balanceResponse?.BalanceSat ?? 0)</span>
+				<span class="denominator">sats</span>
+			</div>
+			<div class="button-row">
+				<SendReceiveButtons />
+			</div>
+		</div>
+	}
+</div>
+
+@code {
+	private BalanceResponse? _balanceResponse;
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			LoadingService.StartLoading();
+			StateHasChanged();
+
+			_balanceResponse = await WalletService.GetBalanceAsync();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error loading data: {ex.Message}");
+		}
+		finally
+		{
+			LoadingService.StopLoading();
+			StateHasChanged();
+		}
+	}
+
+	private string FormatBalance(int balance)
+	{
+		return balance.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ').Replace(' ', '\u2009'); // Thin space
+	}
+}

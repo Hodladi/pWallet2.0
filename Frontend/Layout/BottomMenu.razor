@@ -1,0 +1,140 @@
+﻿@using SimpLN.Enums
+@using SimpLN.Extensions
+@using SimpLN.Services
+@using SimpLN.Models
+
+@inherits SimpLn
+
+@inject IJSRuntime Js
+@inject LoadingService LoadingService
+@inject IWalletService WalletService
+
+<div class="bottom-menu">
+    <button class="chevron-up-btn" @onclick="ToggleMenu">
+        <i class="bi @(_isMenuOpen ? "bi-chevron-down" : "bi-chevron-up")"></i>
+    </button>
+</div>
+
+<div class="sliding-menu @(_isMenuOpen ? "open" : "")">
+    <span class="mt-1 ps-1"><h3 class="ms-1 custom-h3">Transaction History</h3></span>
+    <div class="tabs mt-2">
+        <button class="tab-button @GetTabClass(Tab.All)" @onclick="() => SelectTab(Tab.All)">All</button>
+        <button class="tab-button @GetTabClass(Tab.Incoming)" @onclick="() => SelectTab(Tab.Incoming)">Incoming</button>
+        <button class="tab-button @GetTabClass(Tab.Outgoing)" @onclick="() => SelectTab(Tab.Outgoing)">Outgoing</button>
+    </div>
+    <div class="menu-content-bottommenu">
+        @if (LoadingService.IsLoading)
+        {
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        }
+        else
+        {
+            <HistoryGrid Transactions="@_filteredTransactions" />
+        }
+    </div>
+</div>
+
+@code {
+    private bool _isMenuOpen = false;
+    private List<Transaction> _allTransactions = new();
+    private List<Transaction> _incomingTransactions = new();
+    private List<Transaction> _outgoingTransactions = new();
+    private List<Transaction> _filteredTransactions = new();
+
+    private Tab _activeTab = Tab.All;
+
+    private enum Tab { All, Incoming, Outgoing }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            LoadingService.StartLoading();
+
+            var incomingQuery = new PaymentQueryParameters { Limit = 50 };
+            var outgoingQuery = new PaymentQueryParameters { Limit = 50 };
+
+            var incomingPayments = await WalletService.GetIncomingPaymentsAsync(incomingQuery);
+            var outgoingPayments = await WalletService.GetOutgoingPaymentsAsync(outgoingQuery);
+
+            _incomingTransactions = incomingPayments.Select(i => new Transaction
+                {
+                    TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(i.CompletedAt).DateTime,
+                    Amount = (int)i.ReceivedSat,
+                    Fee = (int)i.Fees.ToSats(),
+                    TransactionType = TransactionType.Receive
+                }).ToList();
+
+            _outgoingTransactions = outgoingPayments.Select(o => new Transaction
+                {
+                    TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(o.CompletedAt).DateTime,
+                    Amount = (int)o.Sent,
+                    Fee = (int)o.Fees.ToSats(),
+                    TransactionType = TransactionType.Send
+                }).ToList();
+
+            _allTransactions.AddRange(_incomingTransactions);
+            _allTransactions.AddRange(_outgoingTransactions);
+
+            _filteredTransactions = _allTransactions;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+        }
+        finally
+        {
+            LoadingService.StopLoading();
+        }
+    }
+
+    private void SelectTab(Tab tab)
+    {
+        _activeTab = tab;
+
+        _filteredTransactions = tab switch
+        {
+            Tab.All => _allTransactions,
+            Tab.Incoming => _incomingTransactions,
+            Tab.Outgoing => _outgoingTransactions,
+            _ => _allTransactions
+        };
+    }
+
+    private string GetTabClass(Tab tab)
+    {
+        return _activeTab == tab ? "active-tab" : "";
+    }
+
+    private async Task ToggleMenu()
+    {
+        _isMenuOpen = !_isMenuOpen;
+
+        if (_isMenuOpen)
+        {
+            RegisterClickOutsideListener();
+        }
+    }
+
+    private async void RegisterClickOutsideListener()
+    {
+        await Js.InvokeVoidAsync("addClickOutsideListenerForBottomMenu", DotNetObjectReference.Create(this));
+    }
+
+    [JSInvokable]
+    public void CloseMenuFromOutside()
+    {
+        _isMenuOpen = false;
+        StateHasChanged();
+    }
+
+    public class Transaction
+    {
+        public DateTime TransactionDate { get; set; }
+        public int Amount { get; set; }
+        public int Fee { get; set; }
+        public TransactionType TransactionType { get; set; }
+    }
+}

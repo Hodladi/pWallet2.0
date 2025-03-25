@@ -1,0 +1,94 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@page "/Send"
+
+@using SimpLN.Enums
+@using SimpLN.Services
+@inject NavigationManager NavManager
+@inject IInvoiceTypeService InvoiceTypeService
+@inject StateContainerService StateContainerService
+
+<div class="send-container">
+	<div class="send-card">
+		<h3 class="bolt11-title">Pay Invoice</h3>
+
+		<EditForm Model="@_invoiceModel" OnValidSubmit="ValidateAndContinue">
+			<div class="form-group">
+				<label for="invoice" class="form-label">Invoice</label>
+				<textarea @bind="@( _invoiceModel.Invoice )" @oninput="@( async () => await Task.CompletedTask )" id="invoice" rows="4" class="form-control send-input" placeholder="Enter your invoice here"></textarea>
+			</div>
+			@if (!string.IsNullOrEmpty(_errorMessage))
+			{
+				<div class="alert alert-danger send-error">@_errorMessage</div>
+			}
+			<div class="button-row mt-3">
+				<button class="custom-button custom-button-outline" type="submit">Pay</button>
+				<button class="custom-button custom-button-camera" @onclick="OpenCamera"><i class="bi bi-camera"></i></button>
+				<button class="custom-button custom-button-paste" type="button"
+				        onclick="var el = this; 
+				        el.classList.add('Pasting'); 
+				        navigator.clipboard.readText().then(text => { 
+					        document.getElementById('invoice').value = text.trim(); 
+					        document.getElementById('invoice').dispatchEvent(new Event('change')); // Trigger onchange event
+				        }).catch(error => { 
+					        console.error('Error pasting text:', error); 
+				        }); 
+				        setTimeout(function(){ 
+					        el.classList.remove('Pasting'); 
+				        }, 500);">
+					<i class="bi bi-clipboard"></i>
+				</button>
+				<button class="custom-button custom-button-cancel" type="button" @onclick="@Cancel">Cancel</button>
+			</div>
+		</EditForm>
+	</div>
+</div>
+
+@code {
+    private InvoiceInputModel _invoiceModel = new();
+    private string? _errorMessage;
+
+    private async Task ValidateAndContinue()
+    {
+	    _errorMessage = null;
+
+	    try
+	    {
+		    var invoiceResult = await InvoiceTypeService.IdentifyInvoiceType(_invoiceModel.Invoice);
+
+		    if (invoiceResult.Type == InvoiceType.Unknown)
+		    {
+			    _errorMessage = "The provided invoice is invalid or unsupported.";
+			    return;
+		    }
+		    if (invoiceResult.Type == InvoiceType.LNAuth)
+		    {
+			    NavManager.NavigateTo("/", forceLoad: true);
+		    }
+
+		    StateContainerService.InvoiceResult = invoiceResult;
+
+		    NavManager.NavigateTo("/PaymentForm");
+	    }
+	    catch (Exception ex)
+	    {
+		    _errorMessage = $"An error occurred while validating the invoice: {ex.Message}";
+	    }
+    }
+
+    private async Task OpenCamera()
+    {
+	    NavManager.NavigateTo("Camera");
+    }
+
+    private void Cancel()
+    {
+        NavManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private class InvoiceInputModel
+    {
+        public string Invoice { get; set; } = string.Empty;
+    }
+}

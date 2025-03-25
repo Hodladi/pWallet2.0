@@ -1,0 +1,73 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@using SimpLN.Models
+@using SimpLN.Services
+
+@inherits SimpLN.Frontend.Layout.SimpLn
+
+@inject IWalletService WalletService
+@inject NavigationManager NavManager
+@inject StateContainerService StateContainerService
+
+@page "/Receive"
+
+
+<div class="receive-container">
+	<div class="receive-card">
+		<h3 class="bolt11-title">Create Invoice</h3>
+
+		<EditForm Model="_invoiceRequest" OnValidSubmit="HandleSubmit">
+			<div class="form-group">
+				<label for="amountSat" class="form-label">Amount (sats)</label>
+				<input id="amountSat" type="number" class="form-control bolt11-input" @bind="_invoiceRequest.AmountSat" />
+			</div>
+			<div class="form-group">
+				<label for="description" class="form-label">Description</label>
+				<textarea id="description" rows="2" class="form-control bolt11-input" @bind="_invoiceRequest.Description"></textarea>
+			</div>
+
+			@if (!string.IsNullOrEmpty(_errorMessage))
+			{
+				<div class="alert alert-danger bolt11-error">@_errorMessage</div>
+			}
+
+			<div class="button-row mt-3">
+				<button type="submit" class="custom-button custom-button-outline">Create</button>
+				<button type="button" class="custom-button custom-button-outline" @onclick="Bolt12">Bolt12</button>
+				<button type="button" class="custom-button custom-button-cancel" @onclick="@Cancel">Cancel</button>
+			</div>
+		</EditForm>
+	</div>
+</div>
+
+@code {
+	private CreateInvoiceRequest _invoiceRequest = new();
+	private string? _errorMessage = string.Empty;
+
+	private async Task HandleSubmit()
+	{
+		try
+		{
+			var response = await WalletService.CreateBolt11InvoiceAsync(_invoiceRequest);
+			StateContainerService.Bolt11InvoiceResult = response;
+			NavManager.NavigateTo("Bolt11Invoice");
+
+			_errorMessage = string.Empty;
+		}
+		catch (Exception ex)
+		{
+			_errorMessage = $"Failed to create invoice. Error: {ex.Message}";
+		}
+	}
+
+	private async Task Bolt12()
+	{
+		NavManager.NavigateTo("ReceiveBolt12");
+	}
+
+	private void Cancel()
+	{
+		NavManager.NavigateTo("/", forceLoad: true);
+	}
+}

@@ -1,0 +1,85 @@
+﻿@using SimpLN.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using SimpLN.Services.UserServices
+@inherits LayoutComponentBase
+@implements IDisposable
+
+
+
+@inject WebSocketService WebSocketService
+@inject NavigationManager NavManager
+@inject NotificationService NotificationService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IConfigService ConfigService;
+
+<div class="page">
+	<Notification />
+	<Sidebar />
+	<RefreshPanel />
+	<main>
+		<article class="content d-flex justify-content-center align-items-center">
+			@Body
+		</article>
+	</main>
+	<BottomMenu />
+</div>
+
+@code {
+	private bool _shouldNavigate;
+	private CancellationTokenSource _cts = new();
+
+	protected override async Task OnInitializedAsync()
+	{
+		var isLoggedIn = await AuthStateProvider.GetAuthenticationStateAsync();
+
+		if (isLoggedIn.User.Identity.IsAuthenticated)
+		{
+			var backendSettings = await ConfigService.GetBackendSettingsAsync();
+			if (backendSettings.ApiKey != null && backendSettings.BackendUrl != null)
+			{
+				WebSocketService.OnPaymentReceived += HandlePaymentReceived;
+				_ = WebSocketService.StartWebSocketAsync();
+			}
+		}
+
+	}
+
+	private async void HandlePaymentReceived(PaymentReceivedMessage paymentData)
+	{
+		await InvokeAsync(async () =>
+		{
+			try
+			{
+				NotificationService.ShowNotification($"Payment received: {paymentData.AmountSat} sats");
+				await Task.Delay(3000, _cts.Token);
+				_shouldNavigate = true;
+				StateHasChanged();
+			}
+			catch (TaskCanceledException)
+			{
+			}
+		});
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (_shouldNavigate)
+		{
+			_shouldNavigate = false;
+			NavManager.NavigateTo("/", new NavigationOptions
+				{
+					ForceLoad = false,
+					ReplaceHistoryEntry = false
+				});
+			await Task.Delay(100);
+			NotificationService.HideNotification();
+		}
+	}
+
+	public void Dispose()
+	{
+		WebSocketService.OnPaymentReceived -= HandlePaymentReceived;
+		_cts.Cancel();
+		_cts.Dispose();
+	}
+}

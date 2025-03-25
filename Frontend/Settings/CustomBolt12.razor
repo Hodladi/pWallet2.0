@@ -1,0 +1,175 @@
+﻿@page "/CustomBolt12"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using SimpLN.Services
+@using SimpLN.Services.UserServices
+@inject CloudflareDnsService CloudflareService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IWalletService WalletService
+@inject IConfigService ConfigService
+@attribute [Authorize]
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h3 class="auth-title">Custom Bolt12</h3>
+        <p class="auth-description">Add a custom Bolt12 address via DNS TXT record</p>
+
+        @if (!string.IsNullOrEmpty(_statusMessage))
+        {
+            <div class="alert alert-info">@_statusMessage</div>
+        }
+
+        @if (_isLoading)
+        {
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        }
+
+        <EditForm Model="@_model" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <label>Record Name</label>
+                <InputText @bind-Value="_model.CustomName"
+                           class="form-control auth-input"
+                           placeholder="Enter a name for the record"
+                           id="recordName" />
+                <ValidationMessage For="@(() => _model.CustomName)" class="text-danger auth-error" />
+            </div>
+
+            <span>@_model.CustomName@@@_domain</span>
+
+            <div class="button-row mt-3">
+                <button type="submit" class="custom-button custom-button-outline">Save</button>
+                <button type="button" class="custom-button custom-button-cancel" @onclick="HandleDeleteRecord"><i class="bi bi-trash"></i></button>
+                <button type="button" class="custom-button custom-button-cancel" @onclick="GoToHome">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private CustomBolt12Model _model = new();
+    private string _bolt12Offer = string.Empty;
+    private string? _statusMessage;
+    private string _errorMessage = string.Empty;
+    private string? _domain = string.Empty;
+    private bool _isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+
+        try
+        {
+            _bolt12Offer = await WalletService.GetBolt12OfferAsync();
+            _domain = await CloudflareService.GetDomainNameAsync();
+            _model.CustomName = await CloudflareService.GetCurrentCustomName(_bolt12Offer);
+            var userCustomBolt12 = await ConfigService.GetCustomBolt12Async();
+            if (!string.IsNullOrEmpty(userCustomBolt12))
+            {
+                var parts = userCustomBolt12.Split('@');
+                _model.CustomName = parts[0];
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error loading settings: {ex.Message}";
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            var recordId = await CloudflareService.AddOrUpdateTxtRecord(_model.CustomName, _bolt12Offer);
+            if (!string.IsNullOrEmpty(recordId))
+            {
+                _statusMessage = "Record added or updated successfully!";
+            }
+            else
+            {
+                _statusMessage = "Failed to add or update record.";
+            }
+
+            await UpdateCustomBolt12Async(_model.CustomName);
+            await ShowStatusMessageForSeconds(3);
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error adding or updating record: {ex.Message}";
+            await ShowStatusMessageForSeconds(3);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDeleteRecord()
+    {
+        try
+        {
+            _isLoading = true;
+            StateHasChanged();
+
+            var success = await CloudflareService.DeleteTxtRecord(_model.CustomName, _bolt12Offer);
+            if (success)
+            {
+                _statusMessage = "Record deleted successfully!";
+                await UpdateCustomBolt12Async(null);
+            }
+            else
+            {
+                _statusMessage = "Failed to delete record.";
+            }
+
+            await ShowStatusMessageForSeconds(3);
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error deleting record: {ex.Message}";
+            await ShowStatusMessageForSeconds(3);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateCustomBolt12Async(string? customName)
+    {
+        var fullCustomBolt12 = customName != null ? $"{customName}@{_domain}" : null;
+        await ConfigService.UpdateCustomBolt12Async(fullCustomBolt12);
+    }
+
+    private async Task ShowStatusMessageForSeconds(int seconds)
+    {
+        await Task.Delay(seconds * 1000);
+        _statusMessage = null;
+        StateHasChanged();
+    }
+
+    private void GoToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    public class CustomBolt12Model
+    {
+        public string? CustomName { get; set; }
+    }
+}

@@ -1,0 +1,40 @@
+﻿@using SimpLN.Frontend.Layout
+@inherits SimpLN.Frontend.Layout.SimpLn
+
+<div>
+	<table class="table table-striped">
+		<thead>
+		<tr>
+			<th>Date</th>
+			<th>Amount</th>
+			<th>Fee</th>
+			<th>Type</th>
+		</tr>
+		</thead>
+		<tbody>
+		@if (Transactions != null && Transactions.Any())
+		{
+			@foreach (var transaction in Transactions.OrderByDescending(x => x.TransactionDate))
+			{
+				<tr>
+					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
+					<td style="font-size:12px; font-weight: 100;">@transaction.Amount</td>
+					<td style="font-size:12px; font-weight: 100;">@transaction.Fee</td>
+					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionType</td>
+				</tr>
+			}
+		}
+		else
+		{
+			<tr>
+				<td colspan="4" class="text-center">No transactions found.</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</div>
+
+@code {
+	[Parameter]
+	public List<BottomMenu.Transaction>? Transactions { get; set; }
+}

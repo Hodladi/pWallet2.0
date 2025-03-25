@@ -1,0 +1,28 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="refresh-panel">
+	<AuthorizeView>
+		<Authorized>
+			<form action="Account/Logout" method="post" class="icon-container">
+				<AntiforgeryToken />
+				<input type="hidden" name="ReturnUrl" value="@currentUrl" />
+				<button type="submit" class="nav-link">
+					<i class="bi bi-door-closed" title="Log out"></i>
+				</button>
+			</form>
+		</Authorized>
+	</AuthorizeView>
+	<i class="bi bi-arrow-clockwise refresh-icon" title="Refresh" @onclick="RefreshPage"></i>
+</div>
+
+
+
+@code {
+	private string? currentUrl;
+	private void RefreshPage()
+	{
+		NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+	}
+
+	[Inject] private NavigationManager NavigationManager { get; set; }
+}

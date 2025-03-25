@@ -1,0 +1,111 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@using SimpLN.Frontend.Layout
+@using SimpLN.Models.Config
+
+@inherits SimpLn
+
+@inject QrCodeService QrCodeService
+@inject IWalletService WalletService
+@inject NavigationManager NavManager
+@inject CloudflareDnsService CloudflareService
+@inject IConfigService ConfigService
+
+@page "/ReceiveBolt12"
+@using SimpLN.Services
+@using SimpLN.Services.UserServices
+
+<div class="bolt12-container">
+    <div id="copy-notification" class="copy-notification">Copied to clipboard!</div>
+    <div class="bolt12-card">
+        <h3 class="bolt12-title">Bolt12</h3>
+
+        <div class="qr-code-wrapper">
+            <img src="data:image/png;base64,@_qrCodeBase64" alt="QR Code" class="qr-code clickable" onclick="var el = this;
+                 el.classList.add('Copying');
+                 navigator.clipboard.writeText('@Bolt12Offer')
+                 .then(()=> {
+            document.getElementById('copy-notification').style.top = '0px';
+            setTimeout(() => {
+            document.getElementById('copy-notification').style.top = '-50px';
+            }, 2000);
+            })
+            .catch(error => {
+            console.error('Error copying text:', error);
+            });
+            setTimeout(function(){
+            el.classList.remove('Copying');
+            }, 500);" />
+        </div>
+
+        <div class="form-group">
+            <div class="clickable" onclick="var el = this;
+                 el.classList.add('Copying');
+                 navigator.clipboard.writeText('@Bolt12Offer')
+                 .then(()=>
+                {
+                document.getElementById('copy-notification').style.top = '0px';
+                setTimeout(() => {
+                document.getElementById('copy-notification').style.top = '-50px';
+                }, 2000);
+                })
+                .catch(error => {
+                console.error('Error copying text:', error);
+                });
+                setTimeout(function(){
+                el.classList.remove('Copying');
+                }, 500);">
+                <span class="form-control bolt12-input clickable-span" style="height: 40px; padding: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@Bolt12Offer</span>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Bip353Address))
+        {
+            <div class="form-group">
+                <div class="clickable" onclick="var el = this;
+                 el.classList.add('Copying');
+                 navigator.clipboard.writeText('@Bip353Address')
+                 .then(()=>
+                {
+                document.getElementById('copy-notification').style.top = '0px';
+                setTimeout(() => {
+                document.getElementById('copy-notification').style.top = '-50px';
+                }, 2000);
+                })
+                .catch(error => {
+                console.error('Error copying text:', error);
+                });
+                setTimeout(function(){
+                el.classList.remove('Copying');
+                }, 500);">
+                    <span class="form-control bolt12-input clickable-span" style="height: 40px; padding: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@(CustomBip353Address ?? Bip353Address)</span>
+                </div>
+            </div>
+        }
+        <div class="button-row-right">
+            <button type="button" class="custom-button custom-button-cancel" @onclick="Cancel"><span>Back</span></button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public string? Bolt12Offer { get; set; }
+    public string? CustomBip353Address = string.Empty;
+    public string? Bip353Address { get; set; }
+    private string? _qrCodeBase64 = string.Empty;
+
+    protected override async Task LoadAsync()
+    {
+	    CustomBip353Address = await ConfigService.GetCustomBolt12Async();
+        Bolt12Offer = await WalletService.GetBolt12OfferAsync();
+        Bip353Address = await WalletService.GetLightningAddressAsync();
+
+        _qrCodeBase64 = QrCodeService.GenerateQrCodeBase64(Bolt12Offer);
+    }
+
+    private void Cancel()
+    {
+        NavManager.NavigateTo("/", forceLoad: true);
+    }
+}

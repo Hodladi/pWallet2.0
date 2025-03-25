@@ -1,0 +1,67 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@using SimpLN.Services
+@using SimpLN.Frontend.Layout
+@using SimpLN.Models
+
+@inherits SimpLn
+
+@inject IWalletService WalletService
+@inject NavigationManager NavManager
+@inject StateContainerService StateContainerService
+
+@page "/ReceiveBolt11"
+
+<div class="bolt11-container">
+	<div class="bolt11-card">
+		<h3 class="bolt11-title">Create Bolt11 Invoice</h3>
+
+		<EditForm Model="_invoiceRequest" OnValidSubmit="HandleSubmit">
+			<div class="form-group">
+				<label for="amountSat" class="form-label">Amount (sats)</label>
+				<input id="amountSat" type="number" class="form-control bolt11-input" @bind="_invoiceRequest.AmountSat" />
+			</div>
+			<div class="form-group">
+				<label for="description" class="form-label">Description</label>
+				<textarea id="description" rows="2" class="form-control bolt11-input" @bind="_invoiceRequest.Description"></textarea>
+			</div>
+
+			@if (!string.IsNullOrEmpty(_errorMessage))
+			{
+				<div class="alert alert-danger bolt11-error">@_errorMessage</div>
+			}
+
+			<div class="button-row mt-3">
+				<button type="submit" class="btn btn-outline-secondary btn-custom-create">Create</button>
+				<button type="button" class="btn btn-outline-danger btn-custom-cancel" @onclick="@Cancel">Cancel</button>
+			</div>
+		</EditForm>
+	</div>
+</div>
+
+@code {
+	private CreateInvoiceRequest _invoiceRequest = new();
+	private string? _errorMessage = string.Empty;
+
+	private async Task HandleSubmit()
+	{
+		try
+		{
+			var response = await WalletService.CreateBolt11InvoiceAsync(_invoiceRequest);
+			StateContainerService.Bolt11InvoiceResult = response;
+			NavManager.NavigateTo("Bolt11Invoice");
+
+			_errorMessage = string.Empty;
+		}
+		catch (Exception ex)
+		{
+			_errorMessage = $"Failed to create invoice. Error: {ex.Message}";
+		}
+	}
+
+	private void Cancel()
+	{
+		NavManager.NavigateTo("/", forceLoad: true);
+	}
+}

@@ -1,0 +1,25 @@
+﻿@inject NavigationManager NavManager
+
+<div class="button-row">
+	<button class="custom-button custom-button-outline" @onclick="OpenSend"><span>Send</span></button>
+	<button class="custom-button custom-button-camera" @onclick="OpenCamera"><i class="bi bi-camera"></i></button>
+	<button class="custom-button custom-button-outline" @onclick="OpenReceive"><span>Receive</span></button>
+</div>
+
+@code {
+
+	private async Task OpenSend()
+	{
+		NavManager.NavigateTo("Send");
+	}
+
+	private async Task OpenCamera()
+	{
+		NavManager.NavigateTo("Camera");
+	}
+
+	private async Task OpenReceive()
+	{
+		NavManager.NavigateTo("Receive");
+	}
+}

@@ -1,0 +1,108 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@page "/Camera"
+@using SimpLN.Enums
+@using SimpLN.Services
+
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavManager
+@inject IInvoiceTypeService InvoiceTypeService
+@inject StateContainerService StateContainerService
+
+<div class="camera-container">
+	<div class="camera-card">
+		<div class="qr-scanner-container">
+			<video id="qr-video"></video>
+			<button type="button" class="custom-button custom-button-cancel floating-close-btn" @onclick="StopScanner">Close</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	private DotNetObjectReference<Camera>? _objRef;
+	private bool _isScannerActive = false;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			await StartScanner();
+		}
+	}
+
+	public async Task StartScanner()
+	{
+		if (!_isScannerActive)
+		{
+			_objRef = DotNetObjectReference.Create(this);
+			await JsRuntime.InvokeVoidAsync("startQrScanner", _objRef);
+			_isScannerActive = true;
+		}
+	}
+
+	[JSInvokable]
+	public async Task HandleQrCodeResult(string result)
+	{
+		var resultToLower = result.ToLower();
+		await StopScannerAndProceed(resultToLower);
+	}
+
+	public async Task StopScanner()
+	{
+		if (_isScannerActive)
+		{
+			await JsRuntime.InvokeVoidAsync("stopQrScanner");
+			_isScannerActive = false;
+			if (_objRef != null)
+			{
+				_objRef.Dispose();
+				_objRef = null;
+			}
+			NavManager.NavigateTo("/");
+		}
+	}
+
+	public async Task StopScannerAndProceed(string result)
+	{
+		if (_isScannerActive)
+		{
+			await JsRuntime.InvokeVoidAsync("stopQrScanner");
+			_isScannerActive = false;
+
+			if (_objRef != null)
+			{
+				_objRef.Dispose();
+				_objRef = null;
+			}
+
+			if (result.StartsWith("lightning:"))
+			{
+				result = result.Substring("lightning:".Length);
+			}
+
+			if (result.StartsWith("\u20bf"))
+			{
+				result = result.Substring("\u20bf".Length);
+			}
+
+			var typeAndInvoice = await InvoiceTypeService.IdentifyInvoiceType(result);
+			if (typeAndInvoice.Type == InvoiceType.LNAuth)
+			{
+				NavManager.NavigateTo("/", forceLoad: true);
+			}
+
+			StateContainerService.InvoiceResult = typeAndInvoice;
+
+			NavManager.NavigateTo("PaymentForm");
+		}
+	}
+
+	public void Dispose()
+	{
+		if (_objRef != null)
+		{
+			_objRef.Dispose();
+		}
+	}
+}

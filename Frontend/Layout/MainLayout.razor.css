@@ -1,0 +1,16 @@
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+@media (min-width: 641px) {
+    .page {
+        flex-direction: row;
+    }
+}

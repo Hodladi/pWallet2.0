@@ -1,0 +1,60 @@
+﻿@inherits SimpLn
+
+@inject IJSRuntime Js
+@inject NavigationManager NavManager
+
+<div class="hamburger-icon @( _isMenuOpen ? "hidden" : "")" @onclick="ToggleMenu">
+	<i class="bi bi-list"></i>
+</div>
+
+<div class="sidebar @( _isMenuOpen ? "open" : "")">
+	<div class="menu-header @( !_isMenuOpen ? "hidden" : "")">
+		<button class="btn-close float-end close-button" @onclick="CloseMenu"></button>
+	</div>
+	<div class="menu-content-sidebar">
+
+		<button type="button" class="custom-sidebar-button custom-button-outline" @onclick='() => GoTo("#")' >Node</button><br />
+		<button type="button" class="custom-sidebar-button custom-button-outline mt-2" @onclick='() => GoTo("Backend")'>Backend</button><br />
+		<button type="button" class="custom-sidebar-button custom-button-outline mt-2" @onclick='() => GoTo("Cloudflare")'>Cloudflare</button><br />
+		<button type="button" class="custom-sidebar-button custom-button-outline mt-2" @onclick='() => GoTo("CustomBolt12")'>Custom Bolt12</button><br />
+		<button type="button" class="custom-sidebar-button custom-button-outline mt-2" @onclick='() => GoTo("#")'>Contact</button><br />
+
+	</div>
+</div>
+
+@code {
+	private bool _isMenuOpen = false;
+
+	private void ToggleMenu()
+	{
+		_isMenuOpen = !_isMenuOpen;
+		if (_isMenuOpen)
+		{
+			RegisterClickOutsideListener();
+		}
+	}
+
+	private void CloseMenu()
+	{
+		_isMenuOpen = false;
+		StateHasChanged();
+	}
+
+	[JSInvokable]
+	public void CloseMenuFromOutside()
+	{
+		CloseMenu();
+	}
+
+	private async void RegisterClickOutsideListener()
+	{
+		await Js.InvokeVoidAsync("addClickOutsideListener", DotNetObjectReference.Create(this));
+	}
+
+	private void GoTo(string url)
+	{
+		_isMenuOpen = false;
+		NavManager.NavigateTo(url);
+		StateHasChanged();
+	}
+}

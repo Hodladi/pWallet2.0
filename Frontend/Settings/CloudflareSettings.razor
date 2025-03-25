@@ -1,0 +1,101 @@
+﻿@page "/Cloudflare"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using SimpLN.Models.Config
+@using SimpLN.Services.UserServices
+@inject IConfigService ConfigService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h3 class="auth-title">Cloudflare Settings</h3>
+        <p class="auth-description">Configure your Cloudflare API credentials</p>
+
+        @if (!string.IsNullOrEmpty(_statusMessage))
+        {
+            <div class="alert alert-info">@_statusMessage</div>
+        }
+
+        <EditForm Model="@_model" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label>API Key</label>
+                <InputText @bind-Value="_model.SiteKey"
+                           class="form-control auth-input"
+                           placeholder="API-Key"
+                           id="apiAddress" />
+                <ValidationMessage For="@(() => _model.SiteKey)" class="text-danger auth-error" />
+            </div>
+
+            <div class="form-group">
+                <label>Zone Id</label>
+                <InputText type="password"
+                           @bind-Value="_model.ApiKey"
+                           class="form-control auth-input"
+                           placeholder="Zone-Id"
+                           id="apiToken" />
+                <ValidationMessage For="@(() => _model.ApiKey)" class="text-danger auth-error" />
+            </div>
+
+            <div class="button-row mt-3">
+	            <button type="submit" class="custom-button custom-button-outline">Save</button>
+	            <button type="button" class="custom-button custom-button-cancel" @onclick="GoToHome">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private CloudflareSettingsModel _model = new();
+    private string? _statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            NavigationManager.NavigateTo("/Account/Login");
+            return;
+        }
+
+        try
+        {
+            var existingSettings = await ConfigService.GetCloudflareSettingsAsync();
+            if (existingSettings != null)
+            {
+                _model = existingSettings;
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error loading settings: {ex.Message}";
+        }
+    }
+
+    private void GoToHome()
+    {
+	    NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await ConfigService.UpdateCloudflareSettingsAsync(new CloudflareSettingsModel
+                {
+                    SiteKey = _model.SiteKey,
+                    ApiKey = _model.ApiKey
+                });
+            _statusMessage = "Settings updated successfully!";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = $"Error saving settings: {ex.Message}";
+        }
+    }
+}

@@ -1,0 +1,57 @@
+﻿@using SimpLN.Services
+@inject IPrerenderService PrerenderService
+
+@code {
+    
+    protected bool IsLoading;
+    protected bool ReadyToRender => !IsLoading && !PrerenderService.IsPrerendering;
+
+    protected override void OnParametersSet()
+    {
+        if (!PrerenderService.IsPrerendering)
+        {
+            IsLoading = true;
+            Load();
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!PrerenderService.IsPrerendering)
+        {
+            IsLoading = true;
+            await LoadAsync();
+            IsLoading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && PrerenderService.IsPrerendering)
+        {
+            PrerenderService.IsPrerendering = false;
+            await ReloadAsync();
+            StateHasChanged();
+            await Task.CompletedTask;
+        }
+    }
+
+    protected virtual void Load()
+    {
+
+    }
+
+    protected virtual async Task LoadAsync()
+    {
+
+    }
+
+    protected async Task ReloadAsync()
+    {
+        IsLoading = true;
+        Load();
+        await LoadAsync();
+        IsLoading = false;
+    }
+}

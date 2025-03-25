@@ -1,0 +1,199 @@
+﻿@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+
+@page "/PaymentForm"
+
+@using SimpLN.Enums
+@using SimpLN.Extensions
+@using SimpLN.Frontend.Layout
+@using SimpLN.Models
+@using SimpLN.Services
+
+@inherits SimpLn
+
+@inject NavigationManager NavManager
+@inject StateContainerService StateContainerService
+@inject IInvoiceDecodeService DecodeService
+@inject IPayService PayService
+
+<div class="payment-container">
+    <div class="payment-card">
+        <h3 class="payment-title">Payment Form</h3>
+        <p class="payment-description">Review and confirm your payment details below.</p>
+
+        <EditForm Model="_payModel">
+            <div class="form-group">
+                <label for="invoice" class="form-label">Invoice</label>
+                <textarea id="invoice" rows="3" class="form-control payment-input" value="@_payModel!.Invoice" disabled></textarea>
+            </div>
+            <div class="form-group">
+                <label for="amount" class="form-label">Amount</label>
+                <input id="amount" class="form-control payment-input" type="number" @bind="_payModel.Amount" disabled="@_isAmountDisabled" />
+            </div>
+            @if (_showDescription)
+            {
+                <div class="form-group">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea id="description" rows="2" class="form-control payment-input" @bind="_payModel.Description" disabled="@_isDescriptionDisabled"></textarea>
+                </div>
+            }
+            @if (_showFeeInput)
+            {
+                <div class="form-group">
+                    <label for="fee" class="form-label">Fee (sat/vb)</label>
+                    <input id="fee" class="form-control payment-input" type="number" @bind="_payModel.Fee" disabled="@_isFeeDisabled" />
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger payment-error">@_errorMessage</div>
+            }
+
+            <div class="button-row mt-3">
+                <button class="custom-button custom-button-outline" type="button" @onclick="@(() => SubmitPayment(_payModel.InvoiceType))">Pay</button>
+                <button class="custom-button custom-button-cancel" type="button" @onclick="@Cancel">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private PayModel? _payModel;
+    private Bolt11Invoice? _bolt11Invoice;
+    private bool _isAmountDisabled = true;
+    private bool _isDescriptionDisabled = true;
+    private bool _isFeeDisabled = true;
+    private bool _showFeeInput = false;
+    private bool _showDescription = true;
+    private string? _errorMessage;
+
+    protected override async Task LoadAsync()
+    {
+        if (StateContainerService.InvoiceResult!.Type == InvoiceType.LightningInvoice)
+        {
+            _bolt11Invoice = await DecodeService.DecodeBolt11InvoiceAsync(StateContainerService!.InvoiceResult.Value);
+            _payModel!.Amount = _bolt11Invoice!.Amount.ToSats();
+            _payModel.Description = _bolt11Invoice.Description;
+
+            _isAmountDisabled = true;
+
+            _showDescription = !string.IsNullOrWhiteSpace(_bolt11Invoice.Description);
+        }
+
+        if (StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL || StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain || StateContainerService.InvoiceResult!.Type == InvoiceType.UnifiedPaymentRequest)
+        {
+            _payModel!.Amount = 0;
+            _payModel.Description = string.Empty;
+
+            _isAmountDisabled = false;
+
+            if (StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain)
+            {
+                _showDescription = true;
+                _isDescriptionDisabled = false;
+                _isFeeDisabled = false;
+                _showFeeInput = true;
+            }
+            else
+            {
+                _showDescription = false;
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (StateContainerService.InvoiceResult == null)
+        {
+            NavManager.NavigateTo("/");
+        }
+
+        _payModel = new PayModel()
+            {
+                Invoice = StateContainerService.InvoiceResult!.Value,
+                InvoiceType = StateContainerService.InvoiceResult.Type
+            };
+    }
+
+    private void Cancel()
+    {
+        NavManager.NavigateTo("/");
+    }
+
+	private async Task SubmitPayment(InvoiceType invoiceType)
+	{
+		try
+		{
+			switch (invoiceType)
+			{
+				case InvoiceType.LightningInvoice:
+					var bolt11Request = new PayInvoiceRequest
+						{
+							Invoice = _payModel!.Invoice,
+							AmountSat = _payModel.Amount
+						};
+					var bolt11Response = await PayService.PayBolt11InvoiceAsync(bolt11Request);
+					Console.WriteLine($"Bolt11 Payment Successful: PaymentId={bolt11Response.PaymentId}, Amount={bolt11Response.RecipientAmountSat}");
+					break;
+
+				case InvoiceType.BOLT12Offer:
+					var bolt12Request = new PayOfferRequest
+						{
+							Offer = _payModel!.Invoice,
+							AmountSat = _payModel.Amount,
+							Message = "There you go!"
+						};
+					var bolt12Response = await PayService.PayBolt12OfferAsync(bolt12Request);
+					Console.WriteLine($"Bolt12 Payment Successful: PaymentId={bolt12Response.PaymentId}, Amount={bolt12Response.RecipientAmountSat}");
+					break;
+
+				case InvoiceType.LNURL:
+					var lnurlRequest = new LnurlPayRequest
+						{
+							Lnurl = _payModel!.Invoice,
+							AmountSat = _payModel.Amount,
+							Message = "Payment via LNURL"
+						};
+					var lnurlResponse = await PayService.PayLnurlAsync(lnurlRequest);
+					Console.WriteLine($"LNURL Payment Successful: PaymentId={lnurlResponse.PaymentId}, Amount={lnurlResponse.RecipientAmountSat}");
+					break;
+
+				case InvoiceType.BIP353LightningAddress:
+					var lightningAddressRequest = new PayLnAddressRequest
+						{
+							Address = _payModel!.Invoice,
+							AmountSat = _payModel.Amount,
+							Message = "Payment via Lightning Address"
+						};
+					var lightningAddressResponse = await PayService.PayLightningAddressAsync(lightningAddressRequest);
+					Console.WriteLine($"Lightning Address Payment Successful: PaymentId={lightningAddressResponse.PaymentId}, Amount={lightningAddressResponse.RecipientAmountSat}");
+					break;
+
+				case InvoiceType.BitcoinOnChain:
+					var onChainRequest = new PayOnChainRequest
+						{
+							Address = _payModel!.Invoice,
+							AmountSat = _payModel.Amount,
+							FeeRateSatByte = _payModel.Fee ?? 4
+						};
+					var transactionId = await PayService.PayOnChainAsync(onChainRequest);
+					Console.WriteLine($"On-Chain Payment Successful: TransactionId={transactionId}");
+					break;
+
+				default:
+					Console.WriteLine("Unsupported payment type.");
+					break;
+			}
+
+			StateContainerService.ClearState();
+			NavManager.NavigateTo("/", forceLoad:true);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error during payment: {ex.Message}");
+			NavManager.NavigateTo("/", forceLoad: true);
+		}
+	}
+
+}
