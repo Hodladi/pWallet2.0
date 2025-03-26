@@ -25,25 +25,38 @@
     transition: width 0.3s ease-in-out;
     z-index: 3;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .menu-content-sidebar {
-    height: 100vh;
-    margin-top:60px;
+    flex-grow: 1;
+    margin-top: 80px;
     text-align: center;
 }
 
-.menu-content-headers {
-
+.donate-container {
+    margin-top: auto;
+    text-align: center;
 }
 
 .sidebar.open {
     width: calc(60vw);
-    border-right: 1px solid black;
+    border-right: 1px solid #FF9900;
 }
 
 @media (min-width: 641px) {
     .sidebar.open {
         width: 250px;
     }
+}
+
+.btn-close {
+    font-size: 1.2rem;
+    color: #FF9900;
+}
+
+/* Menu header (close button area) styling when open/closed states are toggled */
+.menu-header.hidden {
+    display: none
 }

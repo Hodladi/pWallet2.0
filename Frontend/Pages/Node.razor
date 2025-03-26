@@ -1,0 +1,99 @@
+﻿@page "/Node"
+
+@using SimpLN.Frontend.Layout
+@using SimpLN.Models
+@using SimpLN.Services
+
+@inherits SimpLn
+
+@inject LoadingService LoadingService
+@inject IWalletService WalletService
+
+<PageTitle>Node Information</PageTitle>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <h3 class="auth-title">Node Details</h3>
+        <p class="auth-description">View information about your node.</p>
+
+        @if (LoadingService.IsLoading)
+        {
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        }
+        else if (NodeInfo != null)
+        {
+            <div class="form-group">
+                <label>Node ID</label>
+                <p class="form-control auth-input" 
+                   style="background-color: #f9f9f9; border: 1px solid #ced4da; padding: 0.375rem 0.75rem; border-radius: 0.25rem; font-family: monospace; overflow-x: auto; white-space: nowrap;">
+	                @NodeInfo.NodeId
+                </p>
+            </div>
+
+            <h4 class="mt-4">Channels</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-striped">
+                    <thead class="table-light">
+                        <tr>
+                            <th>State</th>
+                            <th>Channel ID</th>
+                            <th>Balance (sat)</th>
+                            <th>Inbound Liquidity (sat)</th>
+                            <th>Capacity (sat)</th>
+                            <th>Funding Tx ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (NodeInfo.Channels != null && NodeInfo.Channels.Any())
+                        {
+                            @foreach (var channel in NodeInfo.Channels)
+                            {
+                                <tr>
+                                    <td>@channel.State</td>
+                                    <td style="font-family: monospace;">@channel.ChannelId</td>
+                                    <td>@channel.BalanceSat</td>
+                                    <td>@channel.InboundLiquiditySat</td>
+                                    <td>@channel.CapacitySat</td>
+                                    <td style="font-family: monospace;">@channel.FundingTxId</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center">No channels available.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <p class="text-danger">Failed to load node information.</p>
+        }
+    </div>
+</div>
+
+@code {
+
+    public NodeInfoResponse NodeInfo = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            LoadingService.StartLoading();
+            NodeInfo = await WalletService.GetNodeInfoAsync();
+            LoadingService.StopLoading();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching node info: {ex.Message}");
+            LoadingService.StopLoading();
+            NodeInfo = null; // Handle error gracefully
+        }
+    }
+}

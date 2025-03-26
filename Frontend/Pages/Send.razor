@@ -3,6 +3,7 @@
 
 @page "/Send"
 
+
 @using SimpLN.Enums
 @using SimpLN.Services
 @inject NavigationManager NavManager
@@ -16,7 +17,7 @@
 		<EditForm Model="@_invoiceModel" OnValidSubmit="ValidateAndContinue">
 			<div class="form-group">
 				<label for="invoice" class="form-label">Invoice</label>
-				<textarea @bind="@( _invoiceModel.Invoice )" @oninput="@( async () => await Task.CompletedTask )" id="invoice" rows="4" class="form-control send-input" placeholder="Enter your invoice here"></textarea>
+				<textarea @bind="@(_invoiceModel.Invoice)" @oninput="@( async () => await Task.CompletedTask )" id="invoice" rows="4" class="form-control send-input" placeholder="Enter your invoice here"></textarea>
 			</div>
 			@if (!string.IsNullOrEmpty(_errorMessage))
 			{

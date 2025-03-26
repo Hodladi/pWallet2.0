@@ -19,6 +19,7 @@ public interface IWalletService
 	Task<string> GetBolt12OfferAsync();
 	Task<string> GetLightningAddressAsync();
 	Task<CreateInvoiceResponse> CreateBolt11InvoiceAsync(CreateInvoiceRequest requestData);
+	Task<NodeInfoResponse> GetNodeInfoAsync();
 
 }
 
@@ -227,6 +228,23 @@ public class WalletService : IWalletService
 	    else
 	    {
 		    throw new Exception($"Failed to create Bolt11 invoice. Status code: {response.StatusCode}");
+	    }
+    }
+
+    public async Task<NodeInfoResponse> GetNodeInfoAsync()
+    {
+	    var request = await CreateAuthenticatedRequestAsync(HttpMethod.Get, "/getinfo");
+
+	    var response = await _httpClient.SendAsync(request);
+
+	    if (response.IsSuccessStatusCode)
+	    {
+		    var result = await response.Content.ReadFromJsonAsync<NodeInfoResponse>();
+		    return result;
+	    }
+	    else
+	    {
+		    throw new Exception($"Failed to retrieve node info. Status code: {response.StatusCode}");
 	    }
     }
 }

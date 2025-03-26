@@ -1,0 +1,74 @@
+﻿@page "/Donate"
+@using Mono.TextTemplating
+@using SimpLN.Enums
+@using SimpLN.Models
+@using SimpLN.Services
+
+@inherits SimpLN.Frontend.Layout.SimpLn
+
+@inject IWalletService WalletService
+@inject LoadingService LoadingService
+@inject QrCodeService QrCodeService
+@inject NavigationManager NavManager
+@inject StateContainerService StateService
+
+<div class="auth-container">
+	<div class="auth-card">
+		<h3 class="auth-title">Donate to dev</h3>
+		<p class="auth-description">Buy me a cup of coffee by clicking the QR!</p>
+		@if (LoadingService.IsLoading)
+		{
+			<div class="loading-spinner">
+				<div class="spinner"></div>
+			</div>
+		}
+		else
+		{
+			<div>
+				<h3 class="bolt12-title">Bolt11</h3>
+				<div class="qr-code-wrapper" @onclick="() => PayDev(_bolt11)">
+					<img class="qr-size" src="media/donate11.png"/>
+				</div>
+			</div>
+			<div>
+				<h3 class="bolt12-title">Bolt12</h3>
+				<div class="qr-code-wrapper" @onclick="() => PayDev(_bolt12)">
+					<img class="qr-size" src="media/donate12.png"/>
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+
+	private string? _qrCodeBase64 = string.Empty;
+	public string? Bolt12Offer { get; set; }
+	private string _bolt12 = "lno1zrxq8pjw7qjlm68mtp7e3yvxee4y5xrgjhhyf2fxhlphpckrvevh50u0q262ga22f2wpta3ty4g9mj0yvgksdkr7nfz2k6d3ygvhtux9ageajqszv7pkwfhqgudhlepdy5f3zfjv6mlve7aptqhdufj0uq3z7x9l3x6sqv6ck5nrq4zrvxxd7gclpaqggss6dtwyw7jvvxhmdw7q5q2l8hpunrv4utdtur87zu5cey626cp44g57w9njqtlprk7fksh8z0f7vcv0m7anysft4p6zsrphahk7rvlfa4czm6s0sqqsjk3yt7dl8kzadhj4uz2ynzpfec";
+	private string _bolt11 = "lnurl1dp68gurn8ghj7ampd3kx2ar0veekzar0wd5xjtnrdakj7tnhv4kxctttdehhwm30d3h82unvwqhksmmyd3skg6g4tj56w";
+
+	protected override async Task LoadAsync()
+	{
+		LoadingService.StartLoading();
+		Bolt12Offer = await WalletService.GetBolt12OfferAsync();
+		_qrCodeBase64 = QrCodeService.GenerateQrCodeBase64(Bolt12Offer);
+		LoadingService.StopLoading();
+	}
+
+	private async Task PayDev(string invoice)
+	{
+		InvoiceTypeResult response = new InvoiceTypeResult(DetermineInvoiceType(invoice), invoice );
+		StateService.InvoiceResult = response;
+		NavManager.NavigateTo("PaymentForm");
+	}
+
+	private InvoiceType DetermineInvoiceType(string donation)
+	{
+		if (donation.StartsWith("lnurl", StringComparison.OrdinalIgnoreCase))
+			return InvoiceType.LNURL;
+		else if (donation.StartsWith("lno", StringComparison.OrdinalIgnoreCase))
+			return InvoiceType.BOLT12Offer;
+		else
+			return InvoiceType.LightningInvoice;
+	}
+}
