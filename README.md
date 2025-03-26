@@ -12,3 +12,15 @@ As for now there is only one built version in the repo and that is for Windows u
 But since its .NET you can build the project and run it on any OS.
 
 It works with a SQLite database for account management and also to save your backend and cloudflare credentials.
+
+The UI with Phoenix Server can handle:
+- Lightning invoices (pay and receive)
+- LNURL (pay)
+- Lightning Address (pay)
+- Bolt12 offer (pay and receive)
+- Bip353 address (pay and receive)
+- LNAuth
+- Onchain (pay)
+
+If you have a domain and handles dns for it through Cloudflare you can also:
+- Create custom Bip353 address with your domain
