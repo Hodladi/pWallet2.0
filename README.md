@@ -22,6 +22,9 @@ The UI with Phoenix Server can handle:
 - LNAuth
 - Onchain (pay)
 
+Extra:
+- It shows Sats, Btc, USD, EUR by clicking your current amount on home screen
+
 If you have a domain and handles dns for it through Cloudflare you can also:
 - Create custom Bip353 address with your domain
 
