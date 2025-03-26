@@ -59,6 +59,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddTransient<ConfigRepository>();
 builder.Services.AddTransient<IConfigService, ConfigService>();
 builder.Services.AddTransient<CloudflareDnsService>();
+builder.Services.AddSingleton<IBitcoinPriceService, BitcoinPriceService>();
 
 var app = builder.Build();
 

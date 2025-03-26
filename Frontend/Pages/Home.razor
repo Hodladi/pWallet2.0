@@ -1,7 +1,4 @@
-﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
-
-@page "/"
+﻿@page "/"
 
 @using System.Globalization
 @using SimpLN.Models
@@ -12,53 +9,126 @@
 
 @inject LoadingService LoadingService
 @inject IWalletService WalletService
+@inject IBitcoinPriceService BitcoinPriceService
 
 <div class="home-container">
-	@if (LoadingService.IsLoading)
-	{
-		<div class="loading-spinner">
-			<div class="spinner"></div>
-		</div>
-	}
-	else
-	{
-		<div class="home-card">
-			<div class="balance-display">
-				<span class="balance-size">@FormatBalance(_balanceResponse?.BalanceSat ?? 0)</span>
-				<span class="denominator">sats</span>
-			</div>
-			<div class="button-row">
-				<SendReceiveButtons />
-			</div>
-		</div>
-	}
+    @if (LoadingService.IsLoading)
+    {
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+        </div>
+    }
+    else
+    {
+        <div class="home-card">
+	        <div class="balance-display">
+		        <span class="balance-size @GetFontSizeClass()" @onclick="ToggleBalanceFormat">
+			        @GetFormattedBalance()
+		        </span>
+		        <span class="denominator">@(GetDenominator())</span>
+	        </div>
+            <div class="button-row">
+                <SendReceiveButtons />
+            </div>
+        </div>
+    }
 </div>
 
 @code {
-	private BalanceResponse? _balanceResponse;
+    private BalanceResponse? _balanceResponse;
+    private double? CurrentEurPrice { get; set; }
+    private double? CurrentUsdPrice { get; set; }
+    private int balanceFormatIndex = 0;
 
-	protected override async Task OnInitializedAsync()
-	{
-		try
-		{
-			LoadingService.StartLoading();
-			StateHasChanged();
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            LoadingService.StartLoading();
+            StateHasChanged();
+            var tradingPrice = await BitcoinPriceService.GetBitcoinPriceInUsdAndEurAsync();
+            CurrentUsdPrice = tradingPrice.Item1;
+            CurrentEurPrice = tradingPrice.Item2;
 
-			_balanceResponse = await WalletService.GetBalanceAsync();
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"Error loading data: {ex.Message}");
-		}
-		finally
-		{
-			LoadingService.StopLoading();
-			StateHasChanged();
-		}
-	}
+            _balanceResponse = await WalletService.GetBalanceAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+        finally
+        {
+            LoadingService.StopLoading();
+            StateHasChanged();
+        }
+    }
 
-	private string FormatBalance(int balance)
-	{
-		return balance.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ').Replace(' ', '\u2009'); // Thin space
-	}
+    private string GetFormattedBalance()
+    {
+	    int balance = _balanceResponse?.BalanceSat ?? 0;
+
+	    switch (balanceFormatIndex)
+	    {
+		    case 0:
+			    return FormatBalance(balance);
+		    case 1:
+			    return (balance / (double)100000000).ToString("F8");
+		    case 2: // USD
+			    if (CurrentUsdPrice.HasValue)
+			    {
+				    double usdValue = (balance / (double)100000000) * CurrentUsdPrice.Value;
+				    return usdValue > 0 ? usdValue.ToString("F2") : "Less than $0.01";
+			    }
+			    else
+			    {
+				    return "USD Price Not Available";
+			    }
+		    case 3: // EUR
+			    if (CurrentEurPrice.HasValue)
+			    {
+				    double eurValue = (balance / (double)100000000) * CurrentEurPrice.Value;
+				    return eurValue > 0 ? eurValue.ToString("F2") : "Less than €0.01";
+			    }
+			    else
+			    {
+				    return "EUR Price Not Available";
+			    }
+		    default:
+			    return FormatBalance(balance);
+	    }
+    }
+
+
+    private string GetDenominator()
+    {
+        switch (balanceFormatIndex)
+        {
+            case 0: // Sats
+                return "sats";
+            case 1: // Bitcoin
+                return "BTC";
+            case 2: // USD
+                return "USD";
+            case 3: // EUR
+                return "EUR";
+            default:
+                return "sats";
+        }
+    }
+
+    private string FormatBalance(int balance)
+    {
+        return balance.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ').Replace(' ', '\u2009'); // Thin space
+    }
+
+    private void ToggleBalanceFormat()
+    {
+        balanceFormatIndex = (balanceFormatIndex + 1) % 4; // Cycle through formats
+        StateHasChanged(); // Update the UI
+    }
+
+    private string GetFontSizeClass()
+    {
+	    return balanceFormatIndex == 1 ? "smaller-font" : "balance-size";
+    }
 }

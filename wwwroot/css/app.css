@@ -37,6 +37,13 @@ body {
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Adds a subtle shadow */
 }
 
+.smaller-font {
+    font-size: clamp(24px, 13vw, 72px);
+    letter-spacing: -0.05em;
+    color: #444444;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2); /* Smaller size for Bitcoin */
+}
+
 .balance-display {
     display: flex;
     flex-direction: column;
