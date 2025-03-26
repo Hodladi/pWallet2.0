@@ -24,4 +24,12 @@ public class StateContainerService
 		get => _bolt11Invoice;
 		set => _bolt11Invoice = value;
 	}
+
+	private PayInvoiceResponse? _receipt;
+
+	public PayInvoiceResponse Receipt
+	{
+		get => _receipt;
+		set => _receipt = value;
+	}
 }

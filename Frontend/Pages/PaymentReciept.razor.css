@@ -1,0 +1,24 @@
+﻿.bolt12-title {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.success-symbol {
+    font-size: 94px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    color: green;
+}
+
+.reciept-text{
+    font-size:18px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.text-alignment {
+    text-align: center;
+}

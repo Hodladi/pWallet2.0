@@ -1,5 +1,6 @@
 ﻿@attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
+@using Mono.TextTemplating
 
 @page "/PaymentForm"
 
@@ -133,8 +134,7 @@
 							Invoice = _payModel!.Invoice,
 							AmountSat = _payModel.Amount
 						};
-					var bolt11Response = await PayService.PayBolt11InvoiceAsync(bolt11Request);
-					Console.WriteLine($"Bolt11 Payment Successful: PaymentId={bolt11Response.PaymentId}, Amount={bolt11Response.RecipientAmountSat}");
+					StateContainerService.Receipt = await PayService.PayBolt11InvoiceAsync(bolt11Request);
 					break;
 
 				case InvoiceType.BOLT12Offer:
@@ -144,8 +144,7 @@
 							AmountSat = _payModel.Amount,
 							Message = "There you go!"
 						};
-					var bolt12Response = await PayService.PayBolt12OfferAsync(bolt12Request);
-					Console.WriteLine($"Bolt12 Payment Successful: PaymentId={bolt12Response.PaymentId}, Amount={bolt12Response.RecipientAmountSat}");
+                    StateContainerService.Receipt = await PayService.PayBolt12OfferAsync(bolt12Request);
 					break;
 
 				case InvoiceType.LNURL:
@@ -155,8 +154,7 @@
 							AmountSat = _payModel.Amount,
 							Message = "Payment via LNURL"
 						};
-					var lnurlResponse = await PayService.PayLnurlAsync(lnurlRequest);
-					Console.WriteLine($"LNURL Payment Successful: PaymentId={lnurlResponse.PaymentId}, Amount={lnurlResponse.RecipientAmountSat}");
+                    StateContainerService.Receipt = await PayService.PayLnurlAsync(lnurlRequest);
 					break;
 
 				case InvoiceType.BIP353LightningAddress:
@@ -166,8 +164,7 @@
 							AmountSat = _payModel.Amount,
 							Message = "Payment via Lightning Address"
 						};
-					var lightningAddressResponse = await PayService.PayLightningAddressAsync(lightningAddressRequest);
-					Console.WriteLine($"Lightning Address Payment Successful: PaymentId={lightningAddressResponse.PaymentId}, Amount={lightningAddressResponse.RecipientAmountSat}");
+                    StateContainerService.Receipt = await PayService.PayLightningAddressAsync(lightningAddressRequest);
 					break;
 
 				case InvoiceType.BitcoinOnChain:
@@ -178,7 +175,7 @@
 							FeeRateSatByte = _payModel.Fee ?? 4
 						};
 					var transactionId = await PayService.PayOnChainAsync(onChainRequest);
-					Console.WriteLine($"On-Chain Payment Successful: TransactionId={transactionId}");
+					StateContainerService.Receipt.PaymentHash = transactionId;
 					break;
 
 				default:
@@ -187,7 +184,15 @@
 			}
 
 			StateContainerService.ClearState();
-			NavManager.NavigateTo("/", forceLoad:true);
+			if (StateContainerService.Receipt.PaymentHash != null)
+			{
+				NavManager.NavigateTo("/Reciept");	
+			}
+			else
+			{
+                NavManager.NavigateTo("/", forceLoad: true);
+			}
+			
 		}
 		catch (Exception ex)
 		{

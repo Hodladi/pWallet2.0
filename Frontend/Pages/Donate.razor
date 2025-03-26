@@ -1,8 +1,11 @@
 ﻿@page "/Donate"
-@using Mono.TextTemplating
+
+@using Microsoft.AspNetCore.Authorization
 @using SimpLN.Enums
 @using SimpLN.Models
 @using SimpLN.Services
+
+@attribute [Authorize]
 
 @inherits SimpLN.Frontend.Layout.SimpLn
 

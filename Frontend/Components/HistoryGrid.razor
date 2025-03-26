@@ -1,14 +1,16 @@
-﻿@using SimpLN.Frontend.Layout
+﻿@using SimpLN.Enums
+@using SimpLN.Frontend.Layout
 @inherits SimpLN.Frontend.Layout.SimpLn
 
 <div>
 	<table class="table table-striped">
 		<thead>
 		<tr>
-			<th>Date</th>
-			<th>Amount</th>
-			<th>Fee</th>
-			<th>Type</th>
+			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Date</th>
+			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Amnt</th>
+			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Fee</th>
+			<th style="font-size:12px; padding-y: 0; padding-x: 2px; width: 100px;">Msg</th>
+			<th></th>
 		</tr>
 		</thead>
 		<tbody>
@@ -17,10 +19,11 @@
 			@foreach (var transaction in Transactions.OrderByDescending(x => x.TransactionDate))
 			{
 				<tr>
-					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
-						<td style="font-size:12px; font-weight: 100;">@(transaction.Amount - @transaction.Fee)</td>
-					<td style="font-size:12px; font-weight: 100;">@transaction.Fee</td>
-					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionType</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@(transaction.Amount - @transaction.Fee)</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@transaction.Fee</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px; width: 100px;">@transaction.Message</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;"><i class="bi @GetCssIcon(transaction.TransactionType)"></i></td>
 				</tr>
 			}
 		}
@@ -37,4 +40,9 @@
 @code {
 	[Parameter]
 	public List<BottomMenu.Transaction>? Transactions { get; set; }
+
+	private string GetCssIcon(TransactionType type)
+	{
+		return type == TransactionType.Send ? "bi-box-arrow-up-right text-danger" : "bi-box-arrow-in-down-left text-success";
+	}
 }
