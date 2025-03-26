@@ -1,6 +1,5 @@
 ﻿@attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
-@using Mono.TextTemplating
 
 @page "/PaymentForm"
 
@@ -91,10 +90,17 @@
 
             if (StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain)
             {
-                _showDescription = true;
-                _isDescriptionDisabled = false;
+                _showDescription = false;
+                _isDescriptionDisabled = true;
                 _isFeeDisabled = false;
                 _showFeeInput = true;
+            }
+            else if (StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL)
+            {
+	            _showDescription = true;
+	            _isDescriptionDisabled = false;
+	            _isFeeDisabled = true;
+	            _showFeeInput = false;
             }
             else
             {
