@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Models;
+using SimpLN.Services.UserServices;
 
 public interface IInvoiceDecodeService
 {
@@ -16,35 +17,43 @@ public interface IInvoiceDecodeService
 
 public class InvoiceDecodeService : IInvoiceDecodeService
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
+	private readonly IConfigService _configService;
+	private readonly HttpClient _httpClient;
 
-    public InvoiceDecodeService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public InvoiceDecodeService(IHttpClientFactory httpClientFactory, IConfigService configService)
     {
-        _httpClient = httpClientFactory.CreateClient();
-        _configuration = configuration;
+	    _configService = configService;
+	    _httpClient = httpClientFactory.CreateClient();
     }
 
-    private string GetApiHost() => _configuration["PhoenixdApi:Host"];
-    private string GetPassword() => _configuration["PhoenixdApi:Password"];
-
-    private HttpRequestMessage CreateAuthenticatedRequest(HttpMethod method, string path)
+    private async Task<string> GetApiHostAsync()
     {
-        var apiHost = GetApiHost();
-        var password = GetPassword();
-
-        var request = new HttpRequestMessage(method, $"{apiHost}{path}");
-        var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{password}"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
-
-        return request;
+	    var backendSettings = await _configService.GetBackendSettingsAsync();
+	    return backendSettings.BackendUrl;
     }
 
+    private async Task<string> GetPasswordAsync()
+    {
+	    var backendSettings = await _configService.GetBackendSettingsAsync();
+	    return backendSettings.ApiKey;
+    }
+
+    private async Task<HttpRequestMessage> CreateAuthenticatedRequest(HttpMethod method, string path)
+    {
+	    var apiHost = await GetApiHostAsync();
+	    var password = await GetPasswordAsync();
+
+	    var request = new HttpRequestMessage(method, $"{apiHost}{path}");
+	    var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($":{password}"));
+	    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
+
+	    return request;
+    }
    
 
     public async Task<Bolt11Invoice?> DecodeBolt11InvoiceAsync(string invoice)
     {
-        var request = CreateAuthenticatedRequest(HttpMethod.Post, "/decodeinvoice");
+        var request = await CreateAuthenticatedRequest(HttpMethod.Post, "/decodeinvoice");
 
         var content = new FormUrlEncodedContent(new[]
         {
@@ -85,7 +94,7 @@ public class InvoiceDecodeService : IInvoiceDecodeService
 
     public async Task<Bolt12Offer?> DecodeBolt12OfferAsync(string offer)
     {
-        var request = CreateAuthenticatedRequest(HttpMethod.Post, "/decodeoffer");
+        var request = await CreateAuthenticatedRequest(HttpMethod.Post, "/decodeoffer");
 
         // Add offer to the request body
         var content = new FormUrlEncodedContent(new[]

@@ -51,7 +51,7 @@ builder.Services.AddSingleton<LoadingService>();
 builder.Services.AddSingleton<StateContainerService>();
 builder.Services.AddScoped<QrCodeService>();
 
-builder.Services.AddSingleton<IInvoiceDecodeService, InvoiceDecodeService>();
+builder.Services.AddTransient<IInvoiceDecodeService, InvoiceDecodeService>();
 builder.Services.AddScoped<IInvoiceTypeService, InvoiceTypeService>();
 builder.Services.AddScoped<WebSocketService>();
 builder.Services.AddScoped<IPayService, PayService>();
