@@ -18,7 +18,7 @@
 			{
 				<tr>
 					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
-					<td style="font-size:12px; font-weight: 100;">@transaction.Amount</td>
+						<td style="font-size:12px; font-weight: 100;">@(transaction.Amount - @transaction.Fee)</td>
 					<td style="font-size:12px; font-weight: 100;">@transaction.Fee</td>
 					<td style="font-size:12px; font-weight: 100;">@transaction.TransactionType</td>
 				</tr>

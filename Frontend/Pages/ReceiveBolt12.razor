@@ -65,7 +65,7 @@
             <div class="form-group">
                 <div class="clickable" onclick="var el = this;
                  el.classList.add('Copying');
-                 navigator.clipboard.writeText('@Bip353Address')
+                 navigator.clipboard.writeText('@(CustomBip353Address ?? Bip353Address)')
                  .then(()=>
                 {
                 document.getElementById('copy-notification').style.top = '0px';

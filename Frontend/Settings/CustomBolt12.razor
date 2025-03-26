@@ -59,6 +59,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+	    _isLoading = true;
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -84,6 +85,8 @@
         {
             _statusMessage = $"Error loading settings: {ex.Message}";
         }
+
+        _isLoading = false;
     }
 
     private async Task HandleValidSubmit()
@@ -111,11 +114,8 @@
             _statusMessage = $"Error adding or updating record: {ex.Message}";
             await ShowStatusMessageForSeconds(3);
         }
-        finally
-        {
-            _isLoading = false;
-            StateHasChanged();
-        }
+        _isLoading = false;
+        StateHasChanged();
     }
 
     private async Task HandleDeleteRecord()
@@ -130,13 +130,18 @@
             {
                 _statusMessage = "Record deleted successfully!";
                 await UpdateCustomBolt12Async(null);
+                await ShowStatusMessageForSeconds(3);
+                _isLoading = false;
+                _bolt12Offer = await WalletService.GetBolt12OfferAsync();
+                _domain = await CloudflareService.GetDomainNameAsync();
+                _model.CustomName = await CloudflareService.GetCurrentCustomName(_bolt12Offer);
             }
             else
             {
                 _statusMessage = "Failed to delete record.";
             }
 
-            await ShowStatusMessageForSeconds(3);
+            
         }
         catch (Exception ex)
         {
