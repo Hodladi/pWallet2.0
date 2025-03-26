@@ -142,7 +142,7 @@
 						{
 							Offer = _payModel!.Invoice,
 							AmountSat = _payModel.Amount,
-							Message = "There you go!"
+							Message = _payModel.Description
 						};
                     StateContainerService.Receipt = await PayService.PayBolt12OfferAsync(bolt12Request);
 					break;
@@ -152,7 +152,7 @@
 						{
 							Lnurl = _payModel!.Invoice,
 							AmountSat = _payModel.Amount,
-							Message = "Payment via LNURL"
+							Message = _payModel.Description
 						};
                     StateContainerService.Receipt = await PayService.PayLnurlAsync(lnurlRequest);
 					break;
@@ -162,7 +162,7 @@
 						{
 							Address = _payModel!.Invoice,
 							AmountSat = _payModel.Amount,
-							Message = "Payment via Lightning Address"
+							Message = _payModel.Description
 						};
                     StateContainerService.Receipt = await PayService.PayLightningAddressAsync(lightningAddressRequest);
 					break;
