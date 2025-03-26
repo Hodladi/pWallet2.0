@@ -24,3 +24,10 @@ The UI with Phoenix Server can handle:
 
 If you have a domain and handles dns for it through Cloudflare you can also:
 - Create custom Bip353 address with your domain
+
+<img src="https://github.com/user-attachments/assets/10d4472b-50bc-4a6c-8492-d6b8103fe3d5" width="200px"/>
+<img src="https://github.com/user-attachments/assets/16c53f3f-cf77-4c58-beb7-e416ce7a09c5" width="200px"/>
+<img src="https://github.com/user-attachments/assets/87d90ed8-184e-422d-9f81-71216853870f" width="200px"/>
+<img src="https://github.com/user-attachments/assets/1b1d6e3a-fd79-4332-8af9-0943a543141b" width="200px"/>
+<img src="https://github.com/user-attachments/assets/2dc177bc-b13c-4457-8a3d-f0e2cca957ef" width="200px"/>
+
