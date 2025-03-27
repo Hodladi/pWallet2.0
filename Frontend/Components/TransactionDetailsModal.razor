@@ -17,23 +17,25 @@
 			<div class="modal-body">
 				@if (SelectedTransactionDetails != null)
 				{
-						<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
 					@if (!string.IsNullOrEmpty(SelectedTransactionDetails.Description) || !string.IsNullOrEmpty(Message))
 					{
-								<p>Message: 
+						<p>
+							Message:<br />
 							@if (string.IsNullOrEmpty(SelectedTransactionDetails.Description))
 							{
-											<span style="color:#FF9900;">@Message</span>
+								<InputText type="text" class="form-control user-note-input" style="color: #FF9900" @bind-Value="Message" disabled=true />
 							}
 							else
 							{
-											<span style="color:#FF9900;">@SelectedTransactionDetails.Description</span> 
+								<InputText type="text" class="form-control user-note-input" style="color: #FF9900" @bind-Value="SelectedTransactionDetails.Description" disabled=true />
 							}
-								</p>
+						</p>
 					}
-					<p>User note:<br/>
+					<p>
+						User note:<br />
 						<div class="user-note-container">
-							<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
+							<InputText type="text" class="form-control user-note-input" style="color: #FF9900" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
 							<div class="user-note-icons">
 								@if (!IsEditingNote)
 								{
@@ -49,71 +51,76 @@
 					</p>
 					<table class="table table-bordered">
 						<thead style="background-color: #ff9900;">
-						<tr>
-							<th>Description</th>
-							<th>Amount (sats)</th>
-						</tr>
+							<tr>
+								<th>Description</th>
+								<th>Amount (sats)</th>
+							</tr>
 						</thead>
 						<tbody>
-						<tr>
-							<td>Received</td>
-							<td class="text-success"><strong>@SelectedTransactionDetails.ReceivedSat.ToString("F0")</strong></td>
-						</tr>
+							<tr>
+								<td>Received</td>
+								<td class="text-success"><strong>@SelectedTransactionDetails.ReceivedSat.ToString("F0")</strong></td>
+							</tr>
 						</tbody>
 					</table>
 				}
 				else if (SelectedTransactionDetailsOutgoing != null)
 				{
-						<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
-						@if (!string.IsNullOrEmpty(Recipient))
-						{
-							<p>To:<br/>
-								<InputText type="text" class="form-control user-note-input" @bind-Value="Recipient" disabled=true/>
-							</p>
-						}
+					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+					@if (!string.IsNullOrEmpty(Recipient))
+					{
+						<p>
+							To:<br />
+							<InputText type="text" class="form-control user-note-input" style="color: #FF9900" @bind-Value="Recipient" disabled=true />
+						</p>
+					}
 
 					@if (!string.IsNullOrEmpty(Message))
 					{
-								<p>Message:<br/><span style="color:#FF9900;">@Message</span</p>
+						<p>
+							Message:<br />
+							<InputText type="text" class="form-control user-note-input" style="color: #FF9900" @bind-Value="Message" disabled=true />
+						</p>
 					}
-						<p>User note:<br/>
-							<div class="user-note-container">
-								<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
-								<div class="user-note-icons">
+					<p>
+						User note:<br />
+						<div class="user-note-container">
+							<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" style="color: #FF9900" disabled="@(!IsEditingNote)" />
+							<div class="user-note-icons">
 								@if (!IsEditingNote)
 								{
-											<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
+									<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
 								}
 								else
 								{
-											<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetailsOutgoing.PaymentHash)"></i>
-											<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
+									<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetailsOutgoing.PaymentHash)"></i>
+									<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
 								}
-								</div>
 							</div>
-						</p>
-						<table class="table table-bordered">
-							<thead style="background-color: #ff9900;">
-								<tr>
-									<th>Description</th>
-									<th>Amount (sats)</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Sent</td>
-									<td class="text-danger">@((SelectedTransactionDetailsOutgoing.Sent - FeeAsDouble.ToSats()).ToString("F0"))</td>
-								</tr>
-								<tr>
-									<td>Fees</td>
-									<td class="text-danger">@FeeAsDouble.ToSats().ToString("F0")</td>
-								</tr>
-								<tr>
-									<td><strong>Total spent</strong></td>
-									<td class="text-danger"><strong>@SelectedTransactionDetailsOutgoing.Sent</strong></td>
-								</tr>
-							</tbody>
-						</table>
+						</div>
+					</p>
+					<table class="table table-bordered">
+						<thead style="background-color: #ff9900;">
+							<tr>
+								<th>Description</th>
+								<th>Amount (sats)</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Sent</td>
+								<td class="text-danger">@((SelectedTransactionDetailsOutgoing.Sent - FeeAsDouble.ToSats()).ToString("F0"))</td>
+							</tr>
+							<tr>
+								<td>Fees</td>
+								<td class="text-danger">@FeeAsDouble.ToSats().ToString("F0")</td>
+							</tr>
+							<tr>
+								<td><strong>Total spent</strong></td>
+								<td class="text-danger"><strong>@SelectedTransactionDetailsOutgoing.Sent</strong></td>
+							</tr>
+						</tbody>
+					</table>
 				}
 			</div>
 			<div class="modal-footer">
