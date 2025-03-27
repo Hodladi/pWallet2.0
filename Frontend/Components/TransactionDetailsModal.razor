@@ -31,30 +31,46 @@
 							}
 								</p>
 					}
-						<p>User note:<br/>
-							<div class="user-note-container">
-								<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
-								<div class="user-note-icons">
+					<p>User note:<br/>
+						<div class="user-note-container">
+							<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
+							<div class="user-note-icons">
 								@if (!IsEditingNote)
 								{
-											<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
+									<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
 								}
 								else
 								{
-											<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetails.PaymentHash)"></i>
-											<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
+									<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetails.PaymentHash)"></i>
+									<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
 								}
-								</div>
 							</div>
-						</p>
-						<p class="text-success">Received: @SelectedTransactionDetails.ReceivedSat sats</p>
+						</div>
+					</p>
+					<table class="table table-bordered">
+						<thead style="background-color: #ff9900;">
+						<tr>
+							<th>Description</th>
+							<th>Amount (sats)</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr>
+							<td>Received</td>
+							<td class="text-success"><strong>@SelectedTransactionDetails.ReceivedSat.ToString("F0")</strong></td>
+						</tr>
+						</tbody>
+					</table>
 				}
 				else if (SelectedTransactionDetailsOutgoing != null)
 				{
 						<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
-						<p>To:<br/>
-						<InputText type="text" class="form-control user-note-input" @bind-Value="Recipient" disabled=true/>
+						@if (!string.IsNullOrEmpty(Recipient))
+						{
+							<p>To:<br/>
+								<InputText type="text" class="form-control user-note-input" @bind-Value="Recipient" disabled=true/>
 							</p>
+						}
 
 					@if (!string.IsNullOrEmpty(Message))
 					{
