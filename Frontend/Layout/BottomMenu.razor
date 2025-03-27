@@ -85,7 +85,7 @@
 					TransactionType = TransactionType.Receive,
 					PaymentHash = i.PaymentHash,
 					GotMessage = !i.Description.IsNullOrEmpty() || (!i.PayerNote.IsNullOrEmpty() ? true : false)
-				}).ToList();
+				}).Where(x => x.TransactionDate > new DateTime(1970, 1,1) && x.Amount > 0).ToList();
 
 			_outgoingTransactions = outgoingPayments.Select(o => new Transaction
 				{
@@ -94,7 +94,7 @@
 					Fee = (int)o.Fees.ToSats(),
 					TransactionType = TransactionType.Send,
 					PaymentHash = o.PaymentHash,
-				}).ToList();
+				}).Where(x => x.TransactionDate > new DateTime(1970, 1, 1) && x.Amount > 0).ToList();
 
 			_allTransactions.AddRange(_incomingTransactions);
 			_allTransactions.AddRange(_outgoingTransactions);
