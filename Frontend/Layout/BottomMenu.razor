@@ -54,9 +54,23 @@
 		try
 		{
 			LoadingService.StartLoading();
-
-			var incomingQuery = new PaymentQueryParameters { Limit = 50 };
-			var outgoingQuery = new PaymentQueryParameters { Limit = 50 };
+			var currentTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+			var incomingQuery = new PaymentQueryParameters
+				{
+					From = 0,
+					To = currentTimeMs,
+					All = true,
+					Offset = 0,
+					Limit = 100,
+				};
+			var outgoingQuery = new PaymentQueryParameters
+				{
+					From = 0,
+					To = currentTimeMs,
+					All = true,
+					Offset = 0,
+					Limit = 100,
+				};
 
 			var incomingPayments = await WalletService.GetIncomingPaymentsAsync(incomingQuery);
 			var outgoingPayments = await WalletService.GetOutgoingPaymentsAsync(outgoingQuery);
