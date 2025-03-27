@@ -11,4 +11,5 @@ public class PayModel
 	public long? Amount { get; set; }
 	public long? Fee { get; set; }
 	public string? Description { get; set; }
+	public string? PaymentHash { get; set; }
 }

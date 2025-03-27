@@ -3,11 +3,16 @@
 @page "/PaymentForm"
 
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.IdentityModel.Tokens
+@using Mono.TextTemplating
+@using SimpLN.Data.Entities
 @using SimpLN.Enums
 @using SimpLN.Extensions
 @using SimpLN.Models
+@using SimpLN.Models.TransactionHistory
 @using SimpLN.Services.InvoiceServices
 @using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.TranscationHistoryServices
 @using SimpLN.Services.UtilityServices
 
 @inherits SimpLN.Frontend.Layout.SimpLn
@@ -16,118 +21,120 @@
 @inject StateContainerService StateContainerService
 @inject IInvoiceDecodeService DecodeService
 @inject IPayService PayService
+@inject OutgoingPaymentsService OutgoingPaymentsService
 
 <div class="payment-container">
-    <div class="payment-card">
-        <h3 class="payment-title">Payment Form</h3>
-        <p class="payment-description">Review and confirm your payment details below.</p>
+	<div class="payment-card">
+		<h3 class="payment-title">Payment Form</h3>
+		<p class="payment-description">Review and confirm your payment details below.</p>
 
-        <EditForm Model="_payModel">
-            <div class="form-group">
-                <label for="invoice" class="form-label">Invoice</label>
-                <textarea id="invoice" rows="3" class="form-control payment-input" value="@_payModel!.Invoice" disabled></textarea>
-            </div>
-            <div class="form-group">
-                <label for="amount" class="form-label">Amount</label>
-                <input id="amount" class="form-control payment-input" type="number" @bind="_payModel.Amount" disabled="@_isAmountDisabled" />
-            </div>
-            @if (_showDescription)
-            {
-                <div class="form-group">
-                    <label for="description" class="form-label">Message</label>
-                    <textarea id="description" rows="2" class="form-control payment-input" @bind="_payModel.Description" disabled="@_isDescriptionDisabled"></textarea>
-                </div>
-            }
-            @if (_showFeeInput)
-            {
-                <div class="form-group">
-                    <label for="fee" class="form-label">Fee (sat/vb)</label>
-                    <input id="fee" class="form-control payment-input" type="number" @bind="_payModel.Fee" disabled="@_isFeeDisabled" />
-                </div>
-            }
+		<EditForm Model="_payModel">
+			<div class="form-group">
+				<label for="invoice" class="form-label">Invoice</label>
+				<textarea id="invoice" rows="3" class="form-control payment-input" value="@_payModel!.Invoice" disabled></textarea>
+			</div>
+			<div class="form-group">
+				<label for="amount" class="form-label">Amount</label>
+				<input id="amount" class="form-control payment-input" type="number" @bind="_payModel.Amount" disabled="@_isAmountDisabled" />
+			</div>
+			@if (_showDescription)
+			{
+				<div class="form-group">
+					<label for="description" class="form-label">Message</label>
+					<textarea id="description" rows="2" class="form-control payment-input" @bind="_payModel.Description" disabled="@_isDescriptionDisabled"></textarea>
+				</div>
+			}
+			@if (_showFeeInput)
+			{
+				<div class="form-group">
+					<label for="fee" class="form-label">Fee (sat/vb)</label>
+					<input id="fee" class="form-control payment-input" type="number" @bind="_payModel.Fee" disabled="@_isFeeDisabled" />
+				</div>
+			}
 
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="alert alert-danger payment-error">@_errorMessage</div>
-            }
+			@if (!string.IsNullOrEmpty(_errorMessage))
+			{
+				<div class="alert alert-danger payment-error">@_errorMessage</div>
+			}
 
-            <div class="button-row mt-3">
-                <button class="custom-button custom-button-outline" type="button" @onclick="@(() => SubmitPayment(_payModel.InvoiceType))">Pay</button>
-                <button class="custom-button custom-button-cancel" type="button" @onclick="@Cancel">Cancel</button>
-            </div>
-        </EditForm>
-    </div>
+			<div class="button-row mt-3">
+				<button class="custom-button custom-button-outline" type="button" @onclick="@(() => SubmitPayment(_payModel.InvoiceType))">Pay</button>
+				<button class="custom-button custom-button-cancel" type="button" @onclick="@Cancel">Cancel</button>
+			</div>
+		</EditForm>
+	</div>
 </div>
 
 @code {
-    private PayModel? _payModel;
-    private Bolt11Invoice? _bolt11Invoice;
-    private bool _isAmountDisabled = true;
-    private bool _isDescriptionDisabled = true;
-    private bool _isFeeDisabled = true;
-    private bool _showFeeInput = false;
-    private bool _showDescription = true;
-    private string? _errorMessage;
+	private PayModel? _payModel;
+	private Bolt11Invoice? _bolt11Invoice;
+	private bool _isAmountDisabled = true;
+	private bool _isDescriptionDisabled = true;
+	private bool _isFeeDisabled = true;
+	private bool _showFeeInput = false;
+	private bool _showDescription = true;
+	private string? _errorMessage;
 
-    protected override async Task LoadAsync()
-    {
-        if (StateContainerService.InvoiceResult!.Type == InvoiceType.LightningInvoice)
-        {
-            _bolt11Invoice = await DecodeService.DecodeBolt11InvoiceAsync(StateContainerService!.InvoiceResult.Value);
-            _payModel!.Amount = _bolt11Invoice!.Amount.ToSats();
-            _payModel.Description = _bolt11Invoice.Description;
+	protected override async Task LoadAsync()
+	{
+		if (StateContainerService.InvoiceResult!.Type == InvoiceType.LightningInvoice)
+		{
+			_bolt11Invoice = await DecodeService.DecodeBolt11InvoiceAsync(StateContainerService!.InvoiceResult.Value);
+			_payModel!.Amount = _bolt11Invoice!.Amount.ToSats();
+			_payModel.Description = _bolt11Invoice.Description;
+			_payModel.Invoice = StateContainerService!.InvoiceResult.Value;
 
-            _isAmountDisabled = true;
+			_isAmountDisabled = true;
 
-            _showDescription = !string.IsNullOrWhiteSpace(_bolt11Invoice.Description);
-        }
+			_showDescription = !string.IsNullOrWhiteSpace(_bolt11Invoice.Description);
+		}
 
-        if (StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL || StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain || StateContainerService.InvoiceResult!.Type == InvoiceType.UnifiedPaymentRequest)
-        {
-            _payModel!.Amount = null;
-            _payModel.Description = string.Empty;
+		if (StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL || StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain || StateContainerService.InvoiceResult!.Type == InvoiceType.UnifiedPaymentRequest)
+		{
+			_payModel!.Amount = null;
+			_payModel.Description = string.Empty;
 
-            _isAmountDisabled = false;
+			_isAmountDisabled = false;
 
-            if (StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain)
-            {
-                _showDescription = false;
-                _isDescriptionDisabled = true;
-                _isFeeDisabled = false;
-                _showFeeInput = true;
-            }
-            else if (StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL)
-            {
-	            _showDescription = true;
-	            _isDescriptionDisabled = false;
-	            _isFeeDisabled = true;
-	            _showFeeInput = false;
-            }
-            else
-            {
-                _showDescription = false;
-            }
-        }
-    }
+			if (StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain)
+			{
+				_showDescription = false;
+				_isDescriptionDisabled = true;
+				_isFeeDisabled = false;
+				_showFeeInput = true;
+			}
+			else if (StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL)
+			{
+				_showDescription = true;
+				_isDescriptionDisabled = false;
+				_isFeeDisabled = true;
+				_showFeeInput = false;
+			}
+			else
+			{
+				_showDescription = false;
+			}
+		}
+	}
 
-    protected override void OnInitialized()
-    {
-        if (StateContainerService.InvoiceResult == null)
-        {
-            NavManager.NavigateTo("/");
-        }
+	protected override void OnInitialized()
+	{
+		if (StateContainerService.InvoiceResult == null)
+		{
+			NavManager.NavigateTo("/");
+		}
 
-        _payModel = new PayModel()
-            {
-                Invoice = StateContainerService.InvoiceResult!.Value,
-                InvoiceType = StateContainerService.InvoiceResult.Type
-            };
-    }
+		_payModel = new PayModel()
+			{
+				Invoice = StateContainerService.InvoiceResult!.Value,
+				InvoiceType = StateContainerService.InvoiceResult.Type
+			};
+	}
 
-    private void Cancel()
-    {
-        NavManager.NavigateTo("/");
-    }
+	private void Cancel()
+	{
+		NavManager.NavigateTo("/");
+	}
 
 	private async Task SubmitPayment(InvoiceType invoiceType)
 	{
@@ -138,10 +145,22 @@
 				case InvoiceType.LightningInvoice:
 					var bolt11Request = new PayInvoiceRequest
 						{
+							
 							Invoice = _payModel!.Invoice,
 							AmountSat = _payModel.Amount
 						};
 					StateContainerService.Receipt = await PayService.PayBolt11InvoiceAsync(bolt11Request);
+
+					var lnInvoice = new PaymentToDatabaseModel
+						{
+							PaymentHash = StateContainerService.Receipt.PaymentHash,
+							InvoiceString = _payModel!.Invoice,
+						};
+
+					if (!lnInvoice.InvoiceString.IsNullOrEmpty())
+					{
+						await OutgoingPaymentsService.SaveMessage(lnInvoice);
+					}
 					break;
 
 				case InvoiceType.BOLT12Offer:
@@ -151,7 +170,21 @@
 							AmountSat = _payModel.Amount,
 							Message = _payModel.Description
 						};
-                    StateContainerService.Receipt = await PayService.PayBolt12OfferAsync(bolt12Request);
+					StateContainerService.Receipt = await PayService.PayBolt12OfferAsync(bolt12Request);
+
+					var bolt12 = new PaymentToDatabaseModel
+						{
+							PaymentHash = StateContainerService.Receipt.PaymentHash,
+							Message = bolt12Request.Message,
+							InvoiceString = _payModel!.Invoice
+
+						};
+
+					if (!bolt12.Message.IsNullOrEmpty())
+					{
+						await OutgoingPaymentsService.SaveMessage(bolt12);
+					}
+
 					break;
 
 				case InvoiceType.LNURL:
@@ -161,7 +194,20 @@
 							AmountSat = _payModel.Amount,
 							Message = _payModel.Description
 						};
-                    StateContainerService.Receipt = await PayService.PayLnurlAsync(lnurlRequest);
+					StateContainerService.Receipt = await PayService.PayLnurlAsync(lnurlRequest);
+
+					var lnUrl = new PaymentToDatabaseModel
+						{
+							PaymentHash = StateContainerService.Receipt.PaymentHash,
+							Message = lnurlRequest.Message,
+							InvoiceString = _payModel!.Invoice
+						};
+
+					if (!lnurlRequest.Message.IsNullOrEmpty())
+					{
+						await OutgoingPaymentsService.SaveMessage(lnUrl);
+					}
+
 					break;
 
 				case InvoiceType.BIP353LightningAddress:
@@ -171,7 +217,21 @@
 							AmountSat = _payModel.Amount,
 							Message = _payModel.Description
 						};
-                    StateContainerService.Receipt = await PayService.PayLightningAddressAsync(lightningAddressRequest);
+					StateContainerService.Receipt = await PayService.PayLightningAddressAsync(lightningAddressRequest);
+
+					var lnAddress = new PaymentToDatabaseModel
+						{
+							PaymentHash = StateContainerService.Receipt.PaymentHash,
+							Message = lightningAddressRequest.Message,
+							InvoiceString = _payModel!.Invoice
+						};
+
+
+					if (!lnAddress.Message.IsNullOrEmpty())
+					{
+						await OutgoingPaymentsService.SaveMessage(lnAddress);
+					}
+
 					break;
 
 				case InvoiceType.BitcoinOnChain:
@@ -183,6 +243,17 @@
 						};
 					var transactionId = await PayService.PayOnChainAsync(onChainRequest);
 					StateContainerService.Receipt.PaymentHash = transactionId;
+					var onChain = new PaymentToDatabaseModel
+						{
+							PaymentHash = StateContainerService.Receipt.PaymentHash,
+							Message = transactionId,
+							InvoiceString = _payModel!.Invoice
+						};
+
+					if (!onChain.Message.IsNullOrEmpty())
+					{
+						await OutgoingPaymentsService.SaveMessage(onChain);
+					}
 					break;
 
 				default:
@@ -193,13 +264,13 @@
 			StateContainerService.ClearState();
 			if (StateContainerService.Receipt.PaymentHash != null)
 			{
-				NavManager.NavigateTo("/Reciept");	
+				NavManager.NavigateTo("/Reciept");
 			}
 			else
 			{
-                NavManager.NavigateTo("/", forceLoad: true);
+				NavManager.NavigateTo("/", forceLoad: true);
 			}
-			
+
 		}
 		catch (Exception ex)
 		{

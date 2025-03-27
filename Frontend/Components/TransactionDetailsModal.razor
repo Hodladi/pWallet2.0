@@ -1,10 +1,14 @@
-﻿@using SimpLN.Enums
+﻿@using System.Security.Cryptography.Pkcs
+@using Microsoft.IdentityModel.Tokens
+@using SimpLN.Enums
 @using SimpLN.Extensions
 @using SimpLN.Frontend.Layout
 @using SimpLN.Models.TransactionHistory
 @using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.TranscationHistoryServices
 @inject IJSRuntime JSRuntime
 @inject IWalletService WalletService
+@inject OutgoingPaymentsService OutgoingPaymentService
 
 <div class="modal-backdrop" style="display: @(_isVisible ? "flex" : "none")" @onclick="CloseModal">
 	<div class="auth-container" @onclick:stopPropagation>
@@ -13,28 +17,87 @@
 			<div class="modal-body">
 				@if (SelectedTransactionDetails != null)
 				{
-					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+						<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
 					@if (!string.IsNullOrEmpty(SelectedTransactionDetails.Description) || !string.IsNullOrEmpty(Message))
 					{
-						<p>Message: 
+								<p>Message: 
 							@if (string.IsNullOrEmpty(SelectedTransactionDetails.Description))
 							{
-								<span style="color:#FF9900;">@Message</span>
+											<span style="color:#FF9900;">@Message</span>
 							}
 							else
 							{
-								<span style="color:#FF9900;">@SelectedTransactionDetails.Description</span> 
+											<span style="color:#FF9900;">@SelectedTransactionDetails.Description</span> 
 							}
-						</p>
+								</p>
 					}
-					<p class="text-success">Received: @SelectedTransactionDetails.ReceivedSat sats</p>
+						<p>User note:<br/>
+							<div class="user-note-container">
+								<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
+								<div class="user-note-icons">
+								@if (!IsEditingNote)
+								{
+											<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
+								}
+								else
+								{
+											<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetails.PaymentHash)"></i>
+											<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
+								}
+								</div>
+							</div>
+						</p>
+						<p class="text-success">Received: @SelectedTransactionDetails.ReceivedSat sats</p>
 				}
 				else if (SelectedTransactionDetailsOutgoing != null)
 				{
-					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
-					<p class="text-danger">Sent: @((SelectedTransactionDetailsOutgoing.Sent - FeeAsDouble.ToSats()).ToString("F0")) sats</p>
-					<p class="text-danger">Fees: @FeeAsDouble.ToSats().ToString("F0") sats</p>
-					<p class="text-danger">Total spent: @SelectedTransactionDetailsOutgoing.Sent sats</p>
+						<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+						<p>To:<br/>
+						<InputText type="text" class="form-control user-note-input" @bind-Value="Recipient" disabled=true/>
+							</p>
+
+					@if (!string.IsNullOrEmpty(Message))
+					{
+								<p>Message:<br/><span style="color:#FF9900;">@Message</span</p>
+					}
+						<p>User note:<br/>
+							<div class="user-note-container">
+								<InputText type="text" class="form-control user-note-input" @bind-Value="UserNote" disabled="@(!IsEditingNote)" />
+								<div class="user-note-icons">
+								@if (!IsEditingNote)
+								{
+											<i class="bi bi-pencil edit-icon" @onclick="EnableNoteEditing"></i>
+								}
+								else
+								{
+											<i class="bi bi-check-circle save-icon" @onclick="() => SaveNote(SelectedTransactionDetailsOutgoing.PaymentHash)"></i>
+											<i class="bi bi-x-circle cancel-icon" @onclick="CancelNoteEditing"></i>
+								}
+								</div>
+							</div>
+						</p>
+						<table class="table table-bordered">
+							<thead style="background-color: #ff9900;">
+								<tr>
+									<th>Description</th>
+									<th>Amount (sats)</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Sent</td>
+									<td class="text-danger">@((SelectedTransactionDetailsOutgoing.Sent - FeeAsDouble.ToSats()).ToString("F0"))</td>
+								</tr>
+								<tr>
+									<td>Fees</td>
+									<td class="text-danger">@FeeAsDouble.ToSats().ToString("F0")</td>
+								</tr>
+								<tr>
+									<td><strong>Total spent</strong></td>
+									<td class="text-danger"><strong>@SelectedTransactionDetailsOutgoing.Sent</strong></td>
+								</tr>
+							</tbody>
+						</table>
 				}
 			</div>
 			<div class="modal-footer">
@@ -47,11 +110,16 @@
 </div>
 
 @code {
+	[Parameter] public EventCallback OnNoteSaved { get; set; }
 	private IncomingPaymentDetails? SelectedTransactionDetails { get; set; }
 	private OutgoingPaymentDetails? SelectedTransactionDetailsOutgoing { get; set; }
-	private double FeeAsDouble{ get; set; }
+	private double FeeAsDouble { get; set; }
 	private DateTime LocalTime { get; set; }
 	private string Message { get; set; }
+	private string Recipient { get; set; }
+
+	private string UserNote { get; set; } = string.Empty;
+	private bool IsEditingNote { get; set; } = false;
 
 	private bool _isVisible;
 
@@ -62,7 +130,8 @@
 			var paymentHash = transaction.PaymentHash;
 			SelectedTransactionDetailsOutgoing = await WalletService.GetOutgoingPaymentDetailsByHashAsync(paymentHash);
 			FeeAsDouble = SelectedTransactionDetailsOutgoing.Fees;
-			Message = transaction.PayerNote;
+			Recipient = transaction.Recipient;
+			Message = transaction.Message;
 			LocalTime = DateTimeOffset.FromUnixTimeMilliseconds(SelectedTransactionDetailsOutgoing.CreatedAt).LocalDateTime;
 		}
 		else
@@ -70,9 +139,14 @@
 			var paymentHash = transaction.PaymentHash;
 			SelectedTransactionDetails = await WalletService.GetIncomingPaymentDetailsAsync(paymentHash);
 			Message = transaction.PayerNote;
+			Recipient = transaction.Recipient;
 			FeeAsDouble = SelectedTransactionDetailsOutgoing?.Fees ?? 0;
 			LocalTime = DateTimeOffset.FromUnixTimeMilliseconds(SelectedTransactionDetails.CreatedAt).LocalDateTime;
 		}
+
+
+		UserNote = await LoadUserNote(transaction.PaymentHash);
+
 
 		StateHasChanged();
 		_isVisible = true;
@@ -86,5 +160,29 @@
 		SelectedTransactionDetailsOutgoing = null;
 		StateHasChanged();
 		return Task.CompletedTask;
+	}
+
+	private void EnableNoteEditing()
+	{
+		IsEditingNote = true;
+	}
+
+	private async Task SaveNote(string paymentHash)
+	{
+		IsEditingNote = false;
+		await OutgoingPaymentService.SaveUserNote(paymentHash, UserNote);
+		await OnNoteSaved.InvokeAsync();
+	}
+
+	private async Task<string> LoadUserNote(string paymentHash)
+	{
+		var userNote = await OutgoingPaymentService.GetUserNoteForTransaction(paymentHash);
+		return userNote ?? ""; // Return empty string if null
+	}
+
+	private void CancelNoteEditing()
+	{
+		IsEditingNote = false;
+		UserNote = "";
 	}
 }

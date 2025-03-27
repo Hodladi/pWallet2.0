@@ -5,11 +5,13 @@
 @using SimpLN.Extensions
 @using SimpLN.Models
 @using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.TranscationHistoryServices
 @using SimpLN.Services.UtilityServices
 
 @inject IJSRuntime Js
 @inject LoadingService LoadingService
 @inject IWalletService WalletService
+@inject OutgoingPaymentsService OutgoingPaymentService
 
 <div class="bottom-menu">
 	<button class="chevron-up-btn" @onclick="ToggleMenu">
@@ -33,7 +35,7 @@
 		}
 		else
 		{
-			<HistoryGrid Transactions="@_filteredTransactions" />
+			<HistoryGrid Transactions="@_filteredTransactions" OnNoteSaved="HandleNoteSaved" />
 		}
 	</div>
 </div>
@@ -74,27 +76,74 @@
 
 			var incomingPayments = await WalletService.GetIncomingPaymentsAsync(incomingQuery);
 			var outgoingPayments = await WalletService.GetOutgoingPaymentsAsync(outgoingQuery);
+			var dbPayments = await OutgoingPaymentService.GetAll();
 
-			_incomingTransactions = incomingPayments.Select(i => new Transaction
-				{
-					TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(i.CompletedAt).DateTime,
-					Amount = (int)i.ReceivedSat,
-					Fee = (int)i.Fees.ToSats(),
-					Description = i.Description,
-					PayerNote = i.PayerNote,
-					TransactionType = TransactionType.Receive,
-					PaymentHash = i.PaymentHash,
-					GotMessage = !i.Description.IsNullOrEmpty() || (!i.PayerNote.IsNullOrEmpty() ? true : false)
-				}).Where(x => x.TransactionDate > new DateTime(1970, 1,1) && x.Amount > 0).ToList();
+			var userNoteLookup = dbPayments
+				.Where(p => p.PaymentHash != null && !string.IsNullOrEmpty(p.UserNote))
+				.ToDictionary(p => p.PaymentHash!, p => p.UserNote);
 
-			_outgoingTransactions = outgoingPayments.Select(o => new Transaction
+			_incomingTransactions = incomingPayments
+				.Select(i => new Transaction
+					{
+						TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(i.CompletedAt).DateTime,
+						Amount = (int)i.ReceivedSat,
+						Fee = (int)i.Fees.ToSats(),
+						Description = i.Description,
+						PayerNote = i.PayerNote,
+						TransactionType = TransactionType.Receive,
+						PaymentHash = i.PaymentHash,
+						GotMessage = !i.Description.IsNullOrEmpty() ||
+									 !i.PayerNote.IsNullOrEmpty() ||
+									 (i.PaymentHash != null && userNoteLookup.ContainsKey(i.PaymentHash))
+					}).Where(x => x.TransactionDate > new DateTime(1970, 1, 1) && x.Amount > 0).ToList();
+
+			var messageLookup = dbPayments
+				.Where(p => p.PaymentHash != null)
+				.ToDictionary(p => p.PaymentHash!, p => p.Message);
+
+			var recipientLookup = dbPayments
+				.Where(p => p.PaymentHash != null && p.InvoiceString != null)
+				.ToDictionary(p => p.PaymentHash!, p => p.InvoiceString);
+
+			_outgoingTransactions = outgoingPayments.Select(o =>
 				{
-					TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(o.CompletedAt).DateTime,
-					Amount = (int)o.Sent,
-					Fee = (int)o.Fees.ToSats(),
-					TransactionType = TransactionType.Send,
-					PaymentHash = o.PaymentHash,
-				}).Where(x => x.TransactionDate > new DateTime(1970, 1, 1) && x.Amount > 0).ToList();
+					var transaction = new Transaction
+					{
+						TransactionDate = DateTimeOffset.FromUnixTimeMilliseconds(o.CompletedAt).DateTime,
+						Amount = (int)o.Sent,
+						Fee = (int)o.Fees.ToSats(),
+						TransactionType = TransactionType.Send,
+						PaymentHash = o.PaymentHash,
+						Message = null,
+						Recipient = null,
+						GotMessage = o.PaymentHash != null && (
+							userNoteLookup.ContainsKey(o.PaymentHash) || 
+							messageLookup.ContainsKey(o.PaymentHash))
+					};
+
+					if (o.PaymentHash != null)
+					{
+						if (messageLookup.TryGetValue(o.PaymentHash, out var msg))
+						{
+							transaction.Message = msg;
+							transaction.GotMessage |= !string.IsNullOrEmpty(msg);
+						}
+
+						if (userNoteLookup.TryGetValue(o.PaymentHash, out var note))
+						{
+							transaction.GotMessage |= !string.IsNullOrEmpty(note);
+						}
+
+						if (recipientLookup.TryGetValue(o.PaymentHash, out var recipient))
+						{
+							transaction.Recipient = recipient;
+						}
+					}
+
+					return transaction;
+				})
+				.Where(x => x.TransactionDate > new DateTime(1970, 1, 1) && x.Amount > 0)
+				.ToList();
 
 			_allTransactions.AddRange(_incomingTransactions);
 			_allTransactions.AddRange(_outgoingTransactions);
@@ -109,6 +158,18 @@
 		{
 			LoadingService.StopLoading();
 		}
+	}
+
+	private async Task HandleNoteSaved()
+	{
+		_allTransactions = new();
+		_incomingTransactions = new();
+		_outgoingTransactions = new();
+		_filteredTransactions = new();
+		LoadingService.StartLoading();
+		await OnInitializedAsync();
+		LoadingService.StopLoading();
+		StateHasChanged();
 	}
 
 	private void SelectTab(Tab tab)
@@ -162,5 +223,6 @@
 		public TransactionType TransactionType { get; set; }
 		public string? PaymentHash { get; set; }
 		public bool GotMessage { get; set; } = false;
+		public string? Recipient { get; set; }
 	}
 }

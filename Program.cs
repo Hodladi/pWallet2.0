@@ -10,6 +10,7 @@ using SimpLN.Services.BitcoinPrice;
 using SimpLN.Services.InvoiceServices;
 using SimpLN.Services.PhoenixServices;
 using SimpLN.Services.QrService;
+using SimpLN.Services.TranscationHistoryServices;
 using SimpLN.Services.UserServices;
 using SimpLN.Services.UtilityServices;
 
@@ -64,6 +65,8 @@ builder.Services.AddTransient<ConfigRepository>();
 builder.Services.AddTransient<IConfigService, ConfigService>();
 builder.Services.AddTransient<CloudflareDnsService>();
 builder.Services.AddSingleton<IBitcoinPriceService, BitcoinPriceService>();
+builder.Services.AddTransient<OutgoingPaymentsRepository>();
+builder.Services.AddTransient<OutgoingPaymentsService>();
 
 var app = builder.Build();
 

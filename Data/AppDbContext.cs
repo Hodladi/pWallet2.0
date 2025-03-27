@@ -11,6 +11,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
 	public DbSet<CloudflareSetting> CloudflareSettings { get; set; }
 	public DbSet<BackendSetting> BackendSettings { get; set; }
+	public DbSet<PaymentEntity> Payment { get; set; }
 
 	protected override void OnModelCreating(ModelBuilder modelBuilder)
 	{
@@ -25,5 +26,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 			.HasOne(bs => bs.ApplicationUser)
 			.WithOne(u => u.BackendSetting)
 			.HasForeignKey<BackendSetting>(bs => bs.UserId);
+
+		modelBuilder.Entity<PaymentEntity>()
+			.HasOne(bs => bs.ApplicationUser);
 	}
 }

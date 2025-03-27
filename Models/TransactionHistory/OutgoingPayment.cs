@@ -13,4 +13,6 @@ public class OutgoingPayment
 	public long Fees { get; set; }
 	public long CompletedAt { get; set; }
 	public long CreatedAt { get; set; }
+	public string? Message { get; set; }
+	public string? Recipient { get; set; }
 }

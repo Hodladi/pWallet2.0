@@ -1,5 +1,4 @@
-﻿@using Microsoft.IdentityModel.Tokens
-@using SimpLN.Enums
+﻿@using SimpLN.Enums
 @using SimpLN.Frontend.Layout
 @using SimpLN.Models.TransactionHistory
 @using SimpLN.Services.PhoenixServices
@@ -42,11 +41,14 @@
 		</tbody>
 	</table>
 
-	<TransactionDetailsModal @ref="_transcationDetails" />
+	<TransactionDetailsModal 
+	@ref="_transcationDetails" 
+	OnNoteSaved="HandleNoteSaved" />
 
 </div>
 
 @code {
+	[Parameter] public EventCallback OnNoteSaved { get; set; }
 	[Parameter] public List<BottomMenu.Transaction>? Transactions { get; set; }
 
 	private string GetCssIcon(TransactionType type)
@@ -69,5 +71,15 @@
 	{
 		_transcationDetails?.Show(transaction);
 	}
+
+	private async Task HandleNoteSaved()
+	{
+		Transactions = null;
+		SelectedTransactionDetails = null;
+		SelectedTransactionDetailsOutgoing = null;
+		await OnNoteSaved.InvokeAsync();
+		StateHasChanged();
+	}
+	
 
 }
