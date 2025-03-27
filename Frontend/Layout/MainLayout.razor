@@ -67,7 +67,7 @@
 			_shouldNavigate = false;
 			NavManager.NavigateTo("/", new NavigationOptions
 				{
-					ForceLoad = false,
+					ForceLoad = true,
 					ReplaceHistoryEntry = false
 				});
 			await Task.Delay(100);
