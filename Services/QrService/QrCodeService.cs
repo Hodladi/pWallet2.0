@@ -1,4 +1,4 @@
-﻿namespace SimpLN.Services;
+﻿namespace SimpLN.Services.QrService;
 
 using Net.Codecrete.QrCodeGenerator;
 

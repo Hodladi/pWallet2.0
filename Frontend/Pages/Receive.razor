@@ -1,8 +1,11 @@
 ﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
 
+@page "/Receive"
+
+@using Microsoft.AspNetCore.Authorization
 @using SimpLN.Models
-@using SimpLN.Services
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.UtilityServices
 
 @inherits SimpLN.Frontend.Layout.SimpLn
 
@@ -10,7 +13,6 @@
 @inject NavigationManager NavManager
 @inject StateContainerService StateContainerService
 
-@page "/Receive"
 
 
 <div class="receive-container">

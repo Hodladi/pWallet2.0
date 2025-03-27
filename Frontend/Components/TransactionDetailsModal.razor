@@ -1,0 +1,88 @@
+﻿@using SimpLN.Enums
+@using SimpLN.Extensions
+@using SimpLN.Frontend.Layout
+@using SimpLN.Models.TransactionHistory
+@using SimpLN.Services.PhoenixServices
+@inject IJSRuntime JSRuntime
+@inject IWalletService WalletService
+
+<div class="modal-backdrop" style="display: @(_isVisible ? "flex" : "none")" @onclick="CloseModal">
+	<div class="auth-container" @onclick:stopPropagation>
+		<div class="auth-card">
+			<h3 class="auth-title">Transaction Details</h3>
+			<div class="modal-body">
+				@if (SelectedTransactionDetails != null)
+				{
+					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+					@if (!string.IsNullOrEmpty(SelectedTransactionDetails.Description) || !string.IsNullOrEmpty(Message))
+					{
+						<p>Message: 
+							@if (string.IsNullOrEmpty(SelectedTransactionDetails.Description))
+							{
+								<span style="color:#FF9900;">@Message</span>
+							}
+							else
+							{
+								<span style="color:#FF9900;">@SelectedTransactionDetails.Description</span> 
+							}
+						</p>
+					}
+					<p class="text-success">Received: @SelectedTransactionDetails.ReceivedSat sats</p>
+				}
+				else if (SelectedTransactionDetailsOutgoing != null)
+				{
+					<p>@LocalTime.ToString("yyyy-MM-dd HH:mm")</p>
+					<p class="text-danger">Sent: @((SelectedTransactionDetailsOutgoing.Sent - FeeAsDouble.ToSats()).ToString("F0")) sats</p>
+					<p class="text-danger">Fees: @FeeAsDouble.ToSats().ToString("F0") sats</p>
+					<p class="text-danger">Total spent: @SelectedTransactionDetailsOutgoing.Sent sats</p>
+				}
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@code {
+	private IncomingPaymentDetails? SelectedTransactionDetails { get; set; }
+	private OutgoingPaymentDetails? SelectedTransactionDetailsOutgoing { get; set; }
+	private double FeeAsDouble{ get; set; }
+	private DateTime LocalTime { get; set; }
+	private string Message { get; set; }
+
+	private bool _isVisible;
+
+	public async Task Show(BottomMenu.Transaction transaction)
+	{
+		if (transaction.TransactionType == TransactionType.Send)
+		{
+			var paymentHash = transaction.PaymentHash;
+			SelectedTransactionDetailsOutgoing = await WalletService.GetOutgoingPaymentDetailsByHashAsync(paymentHash);
+			FeeAsDouble = SelectedTransactionDetailsOutgoing.Fees;
+			Message = transaction.PayerNote;
+			LocalTime = DateTimeOffset.FromUnixTimeMilliseconds(SelectedTransactionDetailsOutgoing.CreatedAt).LocalDateTime;
+		}
+		else
+		{
+			var paymentHash = transaction.PaymentHash;
+			SelectedTransactionDetails = await WalletService.GetIncomingPaymentDetailsAsync(paymentHash);
+			Message = transaction.PayerNote;
+			FeeAsDouble = SelectedTransactionDetailsOutgoing?.Fees ?? 0;
+			LocalTime = DateTimeOffset.FromUnixTimeMilliseconds(SelectedTransactionDetails.CreatedAt).LocalDateTime;
+		}
+
+		StateHasChanged();
+		_isVisible = true;
+		StateHasChanged();
+	}
+
+	private Task CloseModal()
+	{
+		_isVisible = false;
+		SelectedTransactionDetails = null;
+		SelectedTransactionDetailsOutgoing = null;
+		StateHasChanged();
+		return Task.CompletedTask;
+	}
+}

@@ -6,8 +6,12 @@ using SimpLN.Data;
 using SimpLN.Frontend;
 using SimpLN.Models.Config;
 using SimpLN.Repositories;
-using SimpLN.Services;
+using SimpLN.Services.BitcoinPrice;
+using SimpLN.Services.InvoiceServices;
+using SimpLN.Services.PhoenixServices;
+using SimpLN.Services.QrService;
 using SimpLN.Services.UserServices;
+using SimpLN.Services.UtilityServices;
 
 var builder = WebApplication.CreateBuilder(args);
 

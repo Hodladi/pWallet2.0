@@ -1,15 +1,16 @@
 ﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
 
 @page "/PaymentForm"
 
+@using Microsoft.AspNetCore.Authorization
 @using SimpLN.Enums
 @using SimpLN.Extensions
-@using SimpLN.Frontend.Layout
 @using SimpLN.Models
-@using SimpLN.Services
+@using SimpLN.Services.InvoiceServices
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.UtilityServices
 
-@inherits SimpLn
+@inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject NavigationManager NavManager
 @inject StateContainerService StateContainerService
@@ -83,7 +84,7 @@
 
         if (StateContainerService.InvoiceResult!.Type == InvoiceType.BOLT12Offer || StateContainerService.InvoiceResult!.Type == InvoiceType.LNURL || StateContainerService.InvoiceResult!.Type == InvoiceType.BIP353LightningAddress || StateContainerService.InvoiceResult!.Type == InvoiceType.BitcoinOnChain || StateContainerService.InvoiceResult!.Type == InvoiceType.UnifiedPaymentRequest)
         {
-            _payModel!.Amount = 0;
+            _payModel!.Amount = null;
             _payModel.Description = string.Empty;
 
             _isAmountDisabled = false;

@@ -1,14 +1,17 @@
-﻿@page "/CustomBolt12"
+﻿@attribute [Authorize]
+
+@page "/CustomBolt12"
+
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using SimpLN.Services
+@using SimpLN.Services.PhoenixServices
 @using SimpLN.Services.UserServices
+
 @inject CloudflareDnsService CloudflareService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IWalletService WalletService
 @inject IConfigService ConfigService
-@attribute [Authorize]
 
 <div class="auth-container">
     <div class="auth-card">

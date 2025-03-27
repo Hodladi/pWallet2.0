@@ -1,18 +1,19 @@
-﻿@page "/"
+﻿@attribute [Authorize]
+
+@page "/"
 
 @using System.Globalization
 @using Microsoft.AspNetCore.Authorization
 @using SimpLN.Models
-@using SimpLN.Services
-@using SimpLN.Frontend.Layout
+@using SimpLN.Services.BitcoinPrice
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.UtilityServices
 
-@inherits SimpLn
+@inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject LoadingService LoadingService
 @inject IWalletService WalletService
 @inject IBitcoinPriceService BitcoinPriceService
-
-@attribute [Authorize]
 
 <div class="home-container">
     @if (LoadingService.IsLoading)

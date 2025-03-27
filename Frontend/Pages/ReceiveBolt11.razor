@@ -1,17 +1,17 @@
 ﻿@attribute [Authorize]
+
+@page "/ReceiveBolt11"
+
 @using Microsoft.AspNetCore.Authorization
-
-@using SimpLN.Services
-@using SimpLN.Frontend.Layout
 @using SimpLN.Models
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.UtilityServices
 
-@inherits SimpLn
+@inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject IWalletService WalletService
 @inject NavigationManager NavManager
 @inject StateContainerService StateContainerService
-
-@page "/ReceiveBolt11"
 
 <div class="bolt11-container">
 	<div class="bolt11-card">

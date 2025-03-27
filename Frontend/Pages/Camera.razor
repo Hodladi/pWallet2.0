@@ -1,9 +1,11 @@
 ﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
 
 @page "/Camera"
+
+@using Microsoft.AspNetCore.Authorization
 @using SimpLN.Enums
-@using SimpLN.Services
+@using SimpLN.Services.InvoiceServices
+@using SimpLN.Services.UtilityServices
 
 @inject IJSRuntime JsRuntime
 @inject NavigationManager NavManager

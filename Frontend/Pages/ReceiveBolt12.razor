@@ -1,19 +1,18 @@
 ﻿@attribute [Authorize]
+
+@page "/ReceiveBolt12"
+
 @using Microsoft.AspNetCore.Authorization
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.QrService
+@using SimpLN.Services.UserServices
 
-@using SimpLN.Frontend.Layout
-
-@inherits SimpLn
+@inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject QrCodeService QrCodeService
 @inject IWalletService WalletService
 @inject NavigationManager NavManager
-@inject CloudflareDnsService CloudflareService
 @inject IConfigService ConfigService
-
-@page "/ReceiveBolt12"
-@using SimpLN.Services
-@using SimpLN.Services.UserServices
 
 <div class="bolt12-container">
     <div id="copy-notification" class="copy-notification">Copied to clipboard!</div>

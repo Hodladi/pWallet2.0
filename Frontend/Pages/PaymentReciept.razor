@@ -1,10 +1,12 @@
-﻿@page "/Reciept"
+﻿@attribute [Authorize]
+
+@page "/Reciept"
+
 @using Microsoft.AspNetCore.Authorization
 @using SimpLN.Models
-@using SimpLN.Services
+@using SimpLN.Services.UtilityServices
 
 @inherits SimpLN.Frontend.Layout.SimpLn
-@attribute [Authorize]
 
 @inject LoadingService LoadingService
 @inject StateContainerService StateContainerService

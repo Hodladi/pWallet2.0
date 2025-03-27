@@ -1,4 +1,4 @@
-﻿namespace SimpLN.Models;
+﻿namespace SimpLN.Models.TransactionHistory;
 
 public class OutgoingPayment
 {

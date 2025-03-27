@@ -1,6 +1,6 @@
 ﻿using SimpLN.Models;
 
-namespace SimpLN.Services;
+namespace SimpLN.Services.UtilityServices;
 
 public class StateContainerService
 {

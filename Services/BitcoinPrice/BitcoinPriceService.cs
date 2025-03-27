@@ -1,4 +1,4 @@
-﻿namespace SimpLN.Services;
+﻿namespace SimpLN.Services.BitcoinPrice;
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -94,6 +94,6 @@ public class CurrencyTicker
 	[JsonPropertyName("last")]
 	public double Last { get; set; }
 	[JsonPropertyName("symbol")]
-	public string Symbol { get; set; } = string.Empty; 
+	public string Symbol { get; set; } = string.Empty;
 }
 

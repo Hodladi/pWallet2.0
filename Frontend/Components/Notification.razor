@@ -1,11 +1,11 @@
-﻿@using SimpLN.Frontend.Layout
-@using SimpLN.Services
+﻿@inherits SimpLN.Frontend.Layout.SimpLn
 
-@inherits SimpLn
+@implements IDisposable
+
+@using SimpLN.Services.UtilityServices
 
 @inject NotificationService NotificationService
 
-@implements IDisposable
 
 <div class="notification" style="@NotificationService.NotificationStyle">
 	<span>@NotificationService.NotificationMessage</span>

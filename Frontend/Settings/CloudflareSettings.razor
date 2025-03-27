@@ -1,9 +1,12 @@
-﻿@page "/Cloudflare"
-@attribute [Authorize]
+﻿@attribute [Authorize]
+
+@page "/Cloudflare"
+
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using SimpLN.Models.Config
 @using SimpLN.Services.UserServices
+
 @inject IConfigService ConfigService
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider

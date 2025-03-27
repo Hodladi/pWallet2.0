@@ -1,11 +1,12 @@
 ﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
 
 @page "/Send"
 
-
+@using Microsoft.AspNetCore.Authorization
 @using SimpLN.Enums
-@using SimpLN.Services
+@using SimpLN.Services.InvoiceServices
+@using SimpLN.Services.UtilityServices
+
 @inject NavigationManager NavManager
 @inject IInvoiceTypeService InvoiceTypeService
 @inject StateContainerService StateContainerService

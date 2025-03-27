@@ -1,48 +1,73 @@
-﻿@using SimpLN.Enums
+﻿@using Microsoft.IdentityModel.Tokens
+@using SimpLN.Enums
 @using SimpLN.Frontend.Layout
+@using SimpLN.Models.TransactionHistory
+@using SimpLN.Services.PhoenixServices
+
 @inherits SimpLN.Frontend.Layout.SimpLn
+
+@inject IWalletService WalletService
 
 <div>
 	<table class="table table-striped">
 		<thead>
-		<tr>
-			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Date</th>
-			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Amnt</th>
-			<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Fee</th>
-			<th style="font-size:12px; padding-y: 0; padding-x: 2px; width: 100px;">Msg</th>
-			<th></th>
-		</tr>
+			<tr>
+				<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Date</th>
+				<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Amount</th>
+				<th style="font-size:12px; padding-y: 0; padding-x: 2px;">Fee</th>
+				<th></th>
+				<th></th>
+			</tr>
 		</thead>
 		<tbody>
-		@if (Transactions != null && Transactions.Any())
-		{
-			@foreach (var transaction in Transactions.OrderByDescending(x => x.TransactionDate))
+			@if (Transactions != null && Transactions.Any())
 			{
-				<tr>
+				@foreach (var transaction in Transactions.OrderByDescending(x => x.TransactionDate))
+				{
+					<tr @onclick="() => ShowTransactionDetailsModal(transaction)">
 						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@transaction.TransactionDate.ToString("yyyy-MM-dd")</td>
 						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@(transaction.Amount - @transaction.Fee)</td>
 						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;">@transaction.Fee</td>
-						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px; width: 100px;">@transaction.Message</td>
+						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px; color:#FF9900;"><i class="@GetMessageSymbol(transaction.GotMessage)"></i></td>
 						<td style="font-size:10px; font-weight: 100; padding-y: 0; padding-x: 2px;"><i class="bi @GetCssIcon(transaction.TransactionType)"></i></td>
+					</tr>
+				}
+			}
+			else
+			{
+				<tr>
+					<td colspan="4" class="text-center">No transactions found.</td>
 				</tr>
 			}
-		}
-		else
-		{
-			<tr>
-				<td colspan="4" class="text-center">No transactions found.</td>
-			</tr>
-		}
 		</tbody>
 	</table>
+
+	<TransactionDetailsModal @ref="_transcationDetails" />
+
 </div>
 
 @code {
-	[Parameter]
-	public List<BottomMenu.Transaction>? Transactions { get; set; }
+	[Parameter] public List<BottomMenu.Transaction>? Transactions { get; set; }
 
 	private string GetCssIcon(TransactionType type)
 	{
-		return type == TransactionType.Send ? "bi-box-arrow-up-right text-danger" : "bi-box-arrow-in-down-left text-success";
+		return type == TransactionType.Send ? "bi-arrow-up-right text-danger" : "bi-arrow-down-left text-success";
 	}
+
+	private string GetMessageSymbol(bool gotMessage)
+	{
+		return gotMessage ? "bi bi-chat-left-text" : "";
+	}
+
+	private BottomMenu.Transaction SelectedTransaction { get; set; }
+	private bool ShowModal { get; set; } = false;
+	private IncomingPaymentDetails? SelectedTransactionDetails { get; set; }
+	private OutgoingPaymentDetails? SelectedTransactionDetailsOutgoing { get; set; }
+
+	private TransactionDetailsModal? _transcationDetails;
+	private void ShowTransactionDetailsModal(BottomMenu.Transaction? transaction)
+	{
+		_transcationDetails?.Show(transaction);
+	}
+
 }

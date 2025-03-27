@@ -1,8 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 using SimpLN.Enums;
 using SimpLN.Models;
+using SimpLN.Services.PhoenixServices;
 
-namespace SimpLN.Services
+namespace SimpLN.Services.InvoiceServices
 {
 	public interface IInvoiceTypeService
 	{
@@ -20,7 +21,7 @@ namespace SimpLN.Services
 		public async Task<InvoiceTypeResult> IdentifyInvoiceType(string input)
 		{
 			var normalizedInput = input.ToLower();
-			
+
 			if (IsBitcoinAddress(normalizedInput))
 			{
 				var x = new InvoiceTypeResult(InvoiceType.BitcoinOnChain, normalizedInput);

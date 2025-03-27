@@ -1,13 +1,13 @@
-﻿namespace SimpLN.Services;
+﻿namespace SimpLN.Services.UtilityServices;
 
 public class NotificationService
 {
-    
+
 	public string NotificationMessage { get; private set; }
 	public string NotificationStyle { get; private set; }
 
 	public event Action OnChange;
-    
+
 	public void ShowNotification(string message)
 	{
 		NotificationMessage = message;

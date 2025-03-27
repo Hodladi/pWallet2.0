@@ -1,11 +1,13 @@
-﻿@page "/Donate"
+﻿@attribute [Authorize]
+
+@page "/Donate"
 
 @using Microsoft.AspNetCore.Authorization
 @using SimpLN.Enums
 @using SimpLN.Models
-@using SimpLN.Services
-
-@attribute [Authorize]
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.QrService
+@using SimpLN.Services.UtilityServices
 
 @inherits SimpLN.Frontend.Layout.SimpLn
 

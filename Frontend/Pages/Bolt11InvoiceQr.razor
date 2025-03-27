@@ -1,9 +1,11 @@
 ﻿@attribute [Authorize]
-@using Microsoft.AspNetCore.Authorization
 
 @page "/Bolt11Invoice"
 
-@using SimpLN.Services
+@using Microsoft.AspNetCore.Authorization
+@using SimpLN.Services.QrService
+@using SimpLN.Services.UtilityServices
+
 @inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject QrCodeService QrCodeService

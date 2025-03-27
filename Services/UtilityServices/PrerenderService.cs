@@ -1,4 +1,4 @@
-﻿namespace SimpLN.Services;
+﻿namespace SimpLN.Services.UtilityServices;
 
 public interface IPrerenderService
 {

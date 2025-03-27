@@ -1,12 +1,13 @@
-﻿@page "/Node"
+﻿@attribute [Authorize]
+
+@page "/Node"
 
 @using Microsoft.AspNetCore.Authorization
-@using SimpLN.Frontend.Layout
 @using SimpLN.Models
-@using SimpLN.Services
-@attribute [Authorize]
+@using SimpLN.Services.PhoenixServices
+@using SimpLN.Services.UtilityServices
 
-@inherits SimpLn
+@inherits SimpLN.Frontend.Layout.SimpLn
 
 @inject LoadingService LoadingService
 @inject IWalletService WalletService

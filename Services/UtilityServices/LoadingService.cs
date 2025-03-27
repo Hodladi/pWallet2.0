@@ -1,4 +1,4 @@
-﻿namespace SimpLN.Services;
+﻿namespace SimpLN.Services.UtilityServices;
 
 public class LoadingService
 {
