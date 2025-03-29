@@ -155,6 +155,7 @@
 						{
 							PaymentHash = StateContainerService.Receipt.PaymentHash,
 							InvoiceString = _payModel!.Invoice,
+							Message = _payModel.Description
 						};
 
 					if (!lnInvoice.InvoiceString.IsNullOrEmpty())
