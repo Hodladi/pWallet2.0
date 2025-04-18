@@ -52,6 +52,10 @@
 			</div>
 
 			<button type="submit" class="custom-button custom-button-outline w-100 mt-3">Log in</button>
+			@if (!string.IsNullOrEmpty(errorMessage))
+			{
+				<p class="text-danger auth-error">@errorMessage</p>
+			}
 		</EditForm>
 
 
@@ -104,7 +108,11 @@
 		}
 		else
 		{
-			errorMessage = "Error: Invalid login attempt.";
+			Console.WriteLine($"Error Message Set: {errorMessage}"); // Debugging output
+			errorMessage = "Error: Invalid login. Check your email and password.";
+			Input.Email = "";
+			Input.Password = "";
+			StateHasChanged();
 		}
 	}
 
