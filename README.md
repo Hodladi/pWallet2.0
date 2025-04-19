@@ -5,7 +5,7 @@ Its built in .NET 9 Blazor as a web application with PWA support so its "install
 
 You can also if you host or handle your DNS to your domain add cloudflare api credentials to add custom BIP353 address to your phoenixd server.
 
-As for now there is only one built version in the repo and that is for Windows users.
+As for now there is a Linux build release, a windows build release, and there is also a Dockerfile.
 But since its .NET you can build the project and run it on any OS.
 
 It works with a SQLite database for account management and also to save your cloudflare credentials.
