@@ -52,6 +52,16 @@ public class ConfigService : IConfigService
 
 	public async Task<string?> GetCustomBolt12Async()
 	{
+		Console.WriteLine($"HttpContext: {_httpContextAccessor.HttpContext}");
+		Console.WriteLine($"User: {_httpContextAccessor.HttpContext?.User}");
+		// Only this var is actually needed to fix the issue?
+		var httpContext = _httpContextAccessor.HttpContext;
+		if (httpContext == null || httpContext.User == null)
+		{
+			Console.WriteLine("Warning: HttpContext or User is null!");
+			return null;
+		}
+
 		var userId = _httpContextAccessor.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
 		var user = await _repository.GetUserAsync(userId);
 		return user.CustomBolt12;

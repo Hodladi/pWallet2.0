@@ -95,7 +95,7 @@
 
     protected override async Task LoadAsync()
     {
-	    CustomBip353Address = await ConfigService.GetCustomBolt12Async();
+        CustomBip353Address = await ConfigService.GetCustomBolt12Async();
         Bolt12Offer = await WalletService.GetBolt12OfferAsync();
         Bip353Address = await WalletService.GetLightningAddressAsync();
 
