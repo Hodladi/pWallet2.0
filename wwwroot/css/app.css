@@ -23,7 +23,6 @@
 html, body {
     font-family: 'Orbitron', sans-serif;
     overscroll-behavior: none;
-    /*font-family: 'Doto VariableFont ROND', sans-serif;*/
     font-variation-settings: 'wght' 500;
 }
 

@@ -1,9 +1,9 @@
 ﻿@attribute [Authorize]
-
 @page "/"
 
 @using System.Globalization
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.SignalR.Client
 @using SimpLN.Models
 @using SimpLN.Services.BitcoinPrice
 @using SimpLN.Services.PhoenixServices
@@ -24,15 +24,28 @@
     }
     else
     {
-        <div class="home-card">
-	        <div class="balance-display">
-		        <span class="balance-size @GetFontSizeClass()" @onclick="ToggleBalanceFormat">
-			        @GetFormattedBalance()
-		        </span>
-		        <span class="denominator">@(GetDenominator())</span>
-	        </div>
-            <div class="button-row">
-                <SendReceiveButtons />
+        var usdTicker = _tickers?.FirstOrDefault(t => t.TargetCurrency == "USD");
+        var eurTicker = _tickers?.FirstOrDefault(t => t.TargetCurrency == "EUR");
+        <div class="dashboard-stack">
+            <div class="price-card">
+                <div class="price-header">Current BTC price</div>
+                <div class="price-values-row">
+                    <span class="price-value usd">
+                        $@FormatAmount(usdTicker?.Amount)
+                    </span>
+                    <span class="price-value eur">
+                        €@FormatAmount(eurTicker?.Amount)
+                    </span>
+                </div>
+            </div>
+            <div class="balance-card">
+                <span class="balance-main @GetFontSizeClass()" @onclick="ToggleBalanceFormat">
+                    @GetFormattedBalance()
+                </span>
+                <span class="balance-denominator">@GetDenominator()</span>
+                <div class="button-row">
+                    <SendReceiveButtons />
+                </div>
             </div>
         </div>
     }
@@ -40,6 +53,11 @@
 
 @code {
     private BalanceResponse? _balanceResponse;
+    private HubConnection? _hubConnection;
+    private List<Ticker>? _tickers = new();
+    private Ticker? usdTicker;
+    private Ticker? eurTicker;
+    private bool _connectionFailed;
     private double? CurrentEurPrice { get; set; }
     private double? CurrentUsdPrice { get; set; }
     private int balanceFormatIndex = 0;
@@ -50,9 +68,46 @@
         {
             LoadingService.StartLoading();
             StateHasChanged();
-            var tradingPrice = await BitcoinPriceService.GetBitcoinPriceInUsdAndEurAsync();
-            CurrentUsdPrice = tradingPrice.Item1;
-            CurrentEurPrice = tradingPrice.Item2;
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl("https://tickerbackend.hodla.nu/tickerhub")
+                .WithAutomaticReconnect()
+                .Build();
+            _hubConnection.On<IEnumerable<Ticker>>("ReceiveTickerUpdates", async (updatedTickers) =>
+            {
+	            _tickers = updatedTickers.ToList();
+    
+	            var usdTicker = _tickers?.FirstOrDefault(t => t.TargetCurrency == "USD");
+	            var eurTicker = _tickers?.FirstOrDefault(t => t.TargetCurrency == "EUR");
+    
+	            if (usdTicker != null && double.TryParse(usdTicker.Amount, NumberStyles.Any, CultureInfo.InvariantCulture, out double usdValue))
+	            {
+		            CurrentUsdPrice = usdValue;
+	            }
+    
+	            if (eurTicker != null && double.TryParse(eurTicker.Amount, NumberStyles.Any, CultureInfo.InvariantCulture, out double eurValue))
+	            {
+		            CurrentEurPrice = eurValue;
+	            }
+    
+	            await InvokeAsync(StateHasChanged);
+            });
+
+            try
+            {
+                await _hubConnection.StartAsync();
+            }
+            catch
+            {
+                _connectionFailed = true;
+                await InvokeAsync(StateHasChanged);
+            }
+
+            _hubConnection.Closed += async (error) =>
+            {
+                _connectionFailed = true;
+                await InvokeAsync(StateHasChanged);
+                await Task.CompletedTask;
+            };
 
             _balanceResponse = await WalletService.GetBalanceAsync();
         }
@@ -69,39 +124,38 @@
 
     private string GetFormattedBalance()
     {
-	    int balance = _balanceResponse?.BalanceSat ?? 0;
+        int balance = _balanceResponse?.BalanceSat ?? 0;
 
-	    switch (balanceFormatIndex)
-	    {
-		    case 0:
-			    return FormatBalance(balance);
-		    case 1:
-			    return (balance / (double)100000000).ToString("F8");
-		    case 2: // USD
-			    if (CurrentUsdPrice.HasValue)
-			    {
-				    double usdValue = (balance / (double)100000000) * CurrentUsdPrice.Value;
-				    return usdValue > 0 ? usdValue.ToString("F2") : "Less than $0.01";
-			    }
-			    else
-			    {
-				    return "USD Price Not Available";
-			    }
-		    case 3: // EUR
-			    if (CurrentEurPrice.HasValue)
-			    {
-				    double eurValue = (balance / (double)100000000) * CurrentEurPrice.Value;
-				    return eurValue > 0 ? eurValue.ToString("F2") : "Less than €0.01";
-			    }
-			    else
-			    {
-				    return "EUR Price Not Available";
-			    }
-		    default:
-			    return FormatBalance(balance);
-	    }
+        switch (balanceFormatIndex)
+        {
+            case 0:
+                return FormatBalance(balance);
+            case 1:
+                return (balance / (double)100000000).ToString("F8");
+            case 2: // USD
+                if (CurrentUsdPrice.HasValue)
+                {
+                    double usdValue = (balance / (double)100000000) * CurrentUsdPrice.Value;
+                    return usdValue > 0 ? usdValue.ToString("F2") : "Less than $0.01";
+                }
+                else
+                {
+                    return "USD Price Not Available";
+                }
+            case 3: // EUR
+                if (CurrentEurPrice.HasValue)
+                {
+                    double eurValue = (balance / (double)100000000) * CurrentEurPrice.Value;
+                    return eurValue > 0 ? eurValue.ToString("F2") : "Less than €0.01";
+                }
+                else
+                {
+                    return "EUR Price Not Available";
+                }
+            default:
+                return FormatBalance(balance);
+        }
     }
-
 
     private string GetDenominator()
     {
@@ -122,17 +176,26 @@
 
     private string FormatBalance(int balance)
     {
-        return balance.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ').Replace(' ', '\u2009'); // Thin space
+        return balance.ToString("N0", CultureInfo.InvariantCulture).Replace(',', ' ').Replace(' ', '\u2009');
     }
 
     private void ToggleBalanceFormat()
     {
-        balanceFormatIndex = (balanceFormatIndex + 1) % 4; // Cycle through formats
-        StateHasChanged(); // Update the UI
+        balanceFormatIndex = (balanceFormatIndex + 1) % 4;
+        StateHasChanged();
     }
 
     private string GetFontSizeClass()
     {
-	    return balanceFormatIndex == 1 ? "smaller-font" : "balance-size";
+        return balanceFormatIndex == 1 ? "smaller-font" : "balance-main";
+    }
+
+    private string FormatAmount(string amount)
+    {
+        if (decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+        {
+            return value.ToString("N0", CultureInfo.InvariantCulture).Replace(",", " ");
+        }
+        return amount;
     }
 }
