@@ -1,0 +1,16 @@
+services:
+  pwallet:
+    build:
+      context: ../
+      tags:
+        - "massmux/pwallet2.0"
+    container_name: pwallet
+    hostname: pwallet
+    image: massmux/pwallet2.0
+    restart: on-failure
+    ports:
+      - 4949:4949
+    volumes:
+      - ${PWD}/appsettings.json:/app/appsettings.json 
+      - ${PWD}/lnurlp:/app/lnurlp
+      - ${PWD}/SimpLN.db:/app/SimpLN.db
