@@ -10,4 +10,7 @@ services:
     restart: on-failure
     ports:
       - 4949:4949
-
+    volumes:
+      - ${PWD}/appsettings.json:/app/appsettings.json 
+      - ${PWD}/lnurlp:/app/lnurlp
+      - ${PWD}/SimpLN.db:/app/SimpLN.db
